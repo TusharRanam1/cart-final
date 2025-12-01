@@ -1,0 +1,19 @@
+query CartDeliveryRunInput {
+  shop {
+    metafield(namespace: "optimaio_cart", key: "campaigns") {
+      value
+    }
+  }
+  cart {
+    lines {
+      id
+      quantity
+    }
+    deliveryGroups {
+      id
+    }
+  }
+  discount {
+    discountClasses
+  }
+}

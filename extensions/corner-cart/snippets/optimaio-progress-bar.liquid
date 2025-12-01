@@ -1,0 +1,304 @@
+<div id="optimaio-progress-container"></div>
+
+<style>
+#optimaio-progress-container {
+  padding: 10px 0 20px;
+}
+.optimaio-progress-message {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.optimaio-progress-bar {
+  height: 6px;
+  background: #00000010;
+  border-radius: 6px;
+  position: relative;
+  margin-bottom: 28px;
+  width: 90%;
+}
+.optimaio-progress-fill {
+  height: 100%;
+  background: #000 !important;
+  width: 0%;
+  border-radius: 6px;
+  transition: width .4s ease;
+}
+.optimaio-progress-milestones {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
+.optimaio-milestone {
+  position: absolute;
+  transform: translate(-50%, 8px);
+  text-align: center;
+}
+.optimaio-milestone-icon svg {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  background: #fff;
+  border-radius: 50%;
+  border: 2px solid #000;
+}
+.optimaio-milestone.active svg {
+  background: #000;
+  stroke: #fff;
+  fill: #fff;
+}
+.optimaio-milestone-label {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: normal;
+}
+#optimaio-progress-container .optimaio-progress-fill {
+  background: #000 !important;
+  display: block !important;
+}
+</style>
+
+<script>
+(() => {
+  if (window.__OptimaioProMilestonesInit) return;
+  window.__OptimaioProMilestonesInit = true;
+
+  {% comment %} let cache = null, cacheTime = 0;
+  const CACHE_TIME = 120000; {% endcomment %}
+
+  function fillTemplate(str, vars) {
+    return str.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
+  }
+
+  async function fetchCampaign() {
+  const start = performance.now();
+
+  try {
+    const res = await fetch("/apps/optimaio-cart/activeCampaigns", { cache: "no-store" });
+    const data = await res.json();
+
+    const end = performance.now();
+    console.log(`⚡ Campaign fetch time: ${Math.round(end - start)} ms`);
+
+    return data;
+  } catch (err) {
+    const end = performance.now();
+    console.warn(`⚠️ Campaign fetch failed after ${Math.round(end - start)} ms`, err);
+    return null;
+  }
+}
+
+
+  function extractSteps(data) {
+    
+  // 1️⃣ Filter ONLY tiered / cart-goal campaigns (NOT bxgy)
+  const tieredCampaigns = data.campaigns
+    .filter(c =>
+      c.status === "active" &&
+      c.campaignType === "tiered" &&           // ignore bxgy
+      Array.isArray(c.goals) &&
+      c.goals.length > 0
+    );
+
+  // 2️⃣ No valid tiered campaigns → no progress bar
+  if (tieredCampaigns.length === 0) return null;
+
+  // 3️⃣ Pick the highest priority (lowest number)
+  tieredCampaigns.sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+
+  const active = tieredCampaigns[0]; // the winning campaign
+    if (!active || !active.goals || active.goals.length === 0) return null;
+
+    const content = active.content || {};
+
+    function ordinal(n) {
+      if (n === 1) return "1st";
+      if (n === 2) return "2nd";
+      if (n === 3) return "3rd";
+      return n + "th";
+    }
+
+    const steps = active.goals
+      .filter(g => Number(g.target) > 0)
+      .sort((a, b) => a.target - b.target)
+      .map((g, index) => {
+        const goalKey = `${ordinal(index + 1)} goal`;
+        const goalContent = content[goalKey] || {};
+
+        const defaultLabel =
+          g.type === "free_shipping" ? "Free Shipping" :
+          g.type === "order_discount" ? `${g.discountValue}% Off` :
+          g.type === "free_product" ? "Free Gift" :
+          "Reward";
+
+        return {
+          threshold: Number(g.target),
+          beforeLabel: goalContent.giftTitleBefore?.trim() || defaultLabel,
+          afterLabel: goalContent.giftTitleAfter?.trim() || defaultLabel,
+          svg: `<svg width="40" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_887_20826)"><path d="M2.5 6.00016C2.5 5.82335 2.57024 5.65378 2.69526 5.52876C2.82029 5.40373 2.98986 5.3335 3.16667 5.3335H13.8333C14.0101 5.3335 14.1797 5.40373 14.3047 5.52876C14.4298 5.65378 14.5 5.82335 14.5 6.00016V7.3335C14.5 7.51031 14.4298 7.67988 14.3047 7.8049C14.1797 7.92992 14.0101 8.00016 13.8333 8.00016H3.16667C2.98986 8.00016 2.82029 7.92992 2.69526 7.8049C2.57024 7.67988 2.5 7.51031 2.5 7.3335V6.00016Z" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M8.5 5.3335V14.0002" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M13.1668 8V12.6667C13.1668 13.0203 13.0264 13.3594 12.7763 13.6095C12.5263 13.8595 12.1871 14 11.8335 14H5.16683C4.81321 14 4.47407 13.8595 4.22402 13.6095C3.97397 13.3594 3.8335 13.0203 3.8335 12.6667V8" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.50016 5.33314C5.05814 5.33314 4.63421 5.15754 4.32165 4.84498C4.00909 4.53242 3.8335 4.1085 3.8335 3.66647C3.8335 3.22444 4.00909 2.80052 4.32165 2.48796C4.63421 2.1754 5.05814 1.9998 5.50016 1.9998C6.14329 1.9886 6.77351 2.30064 7.30865 2.89524C7.84379 3.48984 8.25901 4.33941 8.50016 5.33314C8.74131 4.33941 9.15653 3.48984 9.69167 2.89524C10.2268 2.30064 10.857 1.9886 11.5002 1.9998C11.9422 1.9998 12.3661 2.1754 12.6787 2.48796C12.9912 2.80052 13.1668 3.22444 13.1668 3.66647C13.1668 4.1085 12.9912 4.53242 12.6787 4.84498C12.3661 5.15754 11.9422 5.33314 11.5002 5.33314" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></g><defs><clipPath id="clip0_887_20826"><rect width="16" height="16" fill="#E0F7F4" transform="translate(0.5)"></rect></clipPath></defs></svg>`
+        };
+      });
+
+    return { steps, trackType: active.trackType, content };
+  }
+
+  function renderUI(container, config) {
+    container.innerHTML = `
+      <div class="optimaio-progress-message"></div>
+      <div class="optimaio-progress-bar">
+        <div class="optimaio-progress-fill"></div>
+        <div class="optimaio-progress-milestones">
+          ${config.steps.map(s => `
+            <div class="optimaio-milestone">
+              <div class="optimaio-milestone-icon">${s.svg}</div>
+              <div class="optimaio-milestone-label">${s.beforeLabel}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+
+    if (!config.steps?.length) return;
+    const maxT = config.steps.at(-1)?.threshold;
+    if (!maxT) return;
+
+    document.querySelectorAll(".optimaio-milestone").forEach((m, i) => {
+  const total = config.steps.length;
+  const pct = ((i + 1) / total) * 100;
+  m.style.left = pct + "%";
+});
+
+  }
+
+  async function updateProgress(cart, config) {
+    if (!config || !config.steps?.length) return;
+
+    const fill = document.querySelector(".optimaio-progress-fill");
+    const msg = document.querySelector(".optimaio-progress-message");
+    const milestones = document.querySelectorAll(".optimaio-milestone");
+
+    if (!fill || !msg || milestones.length === 0) return;
+
+    // Hide progress bar if cart is empty
+const container = document.getElementById("optimaio-progress-container");
+
+if (cart.items.length === 0) {
+  container.style.display = "none";
+  return;
+} else {
+  container.style.display = "block";
+}
+
+
+    const subtotal = cart.items.reduce((t, i) => t + i.final_line_price, 0) / 100;
+    const qty = cart.items.reduce((t, i) => t + i.quantity, 0);
+    const value = config.trackType === "quantity" ? qty : subtotal;
+
+    const maxT = config.steps.at(-1)?.threshold;
+    if (!maxT) return;
+
+    // Equally spaced milestone positions
+const total = config.steps.length;
+const positions = config.steps.map((s, i) => ((i + 1) / total) * 100);
+
+// Thresholds array
+const thresholds = config.steps.map(s => s.threshold);
+
+// Find active milestone index
+let idx = thresholds.findIndex(t => value < t);
+if (idx === -1) {
+  // All reached
+  fill.style.width = "100%";
+} else if (idx === 0) {
+  // Before first milestone
+  const pct = (value / thresholds[0]) * (positions[0]);
+  fill.style.width = pct + "%";
+} else {
+  // Between milestones
+  const prevT = thresholds[idx - 1];
+  const nextT = thresholds[idx];
+  const prevP = positions[idx - 1];
+  const nextP = positions[idx];
+
+  const range = (value - prevT) / (nextT - prevT);
+  const pct = prevP + range * (nextP - prevP);
+
+  fill.style.width = pct + "%";
+}
+
+
+    config.steps.forEach((s, i) => {
+      const isActive = value >= s.threshold;
+      milestones[i].classList.toggle("active", isActive);
+      milestones[i].querySelector(".optimaio-milestone-label").textContent =
+        isActive ? s.afterLabel : s.beforeLabel;
+    });
+
+    const next = config.steps.find(s => value < s.threshold);
+
+    if (!next) {
+      msg.textContent = config.content.progressTextAfter || "You have unlocked all rewards!";
+      return;
+    }
+
+    const remain = next.threshold - value;
+
+    /** ⭐ DYNAMIC MESSAGE FIX STARTS HERE ⭐ **/
+
+    const nextIndex = config.steps.indexOf(next);
+    const ordinalKey =
+      nextIndex === 0 ? "1st goal" :
+      nextIndex === 1 ? "2nd goal" :
+      nextIndex === 2 ? "3rd goal" :
+      `${nextIndex + 1}th goal`;
+
+    const dynamicBefore =
+      config.content?.[ordinalKey]?.progressTextBefore?.trim() || "";
+
+    const remainValue =
+      config.trackType === "quantity" ? remain : remain.toFixed(2);
+
+    if (dynamicBefore) {
+      msg.textContent = fillTemplate(dynamicBefore, { remain: remainValue });
+      return;
+    }
+
+    /** ⭐ DEFAULT MESSAGE (Fallback) ⭐ **/
+
+    msg.textContent =
+      config.trackType === "quantity"
+        ? `Add ${remain} more items to unlock ${next.beforeLabel}`
+        : `Spend ₹${remain.toFixed(2)} more to unlock ${next.beforeLabel}`;
+
+    /** ⭐ DYNAMIC MESSAGE FIX ENDS HERE ⭐ **/
+  }
+
+  document.addEventListener("optimaio:cart:refresh", async () => {
+    const data = await fetchCampaign();
+    const config = extractSteps(data);
+    if (!config || !config.steps?.length) return;
+
+    const cart = await fetch("/cart.js").then(r => r.json());
+    updateProgress(cart, config);
+  });
+
+  (async function init() {
+    const container = document.getElementById("optimaio-progress-container");
+    const data = await fetchCampaign();
+    const config = extractSteps(data);
+
+    if (!config || !config.steps?.length) {
+      container.style.display = "none";
+      return;
+    }
+
+    renderUI(container, config);
+
+    const cart = await fetch("/cart.js").then(r => r.json());
+    updateProgress(cart, config);
+  })();
+})();
+</script>

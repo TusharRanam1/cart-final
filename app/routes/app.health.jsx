@@ -48,54 +48,9 @@ export default function AdditionalPage() {
             <Text variant="headingMd">✅ Polaris UI Works!</Text>
             <Text variant="bodyMd">Shop: {shop}</Text>
             <Text variant="bodyMd">
-              Access Token: {accessToken?.substring(0, 8)}...
+              Access Token: {accessToken}
             </Text>
-
-            <br />
-            <TextField label="Discount Title" value={title} onChange={setTitle} />
-            <TextField label="Discount Code" value={code} onChange={setCode} />
-            <br />
-
-            {/* Form */}
-            <fetcher.Form method="post" action="/api/create-discount">
-              <input type="hidden" name="title" value={title} />
-              <input type="hidden" name="code" value={code} />
-              <Button submit primary>
-                Create Free Shipping Discount
-              </Button>
-            </fetcher.Form>
-
-            {/* ✅ Feedback */}
-            {fetcher.data?.success && (
-              <div style={{ marginTop: "1rem" }}>
-                <Text tone="success">✅ Discount created!</Text>
-                {fetcher.data.id && (
-                  <>
-                    <br />
-                    <Text>ID: {fetcher.data.id}</Text>
-                    <br />
-                    <Text>Title: {fetcher.data.title}</Text>
-                    <br />
-                    <Text>Code: {fetcher.data.code}</Text>
-                    <br />
-                    <Link
-                      url={`https://${shop}/admin/discounts/${extractAdminId(
-                        fetcher.data.id
-                      )}`}
-                      external
-                    >
-                      View in Shopify Admin
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
-
-            {fetcher.data?.errors && (
-              <Text tone="critical">
-                ❌ Error: {fetcher.data.errors.map((e) => e.message).join(", ")}
-              </Text>
-            )}
+            <Text>App Health is good. No API calls made in this example.</Text>
           </Card>
         </Layout.Section>
       </Layout>

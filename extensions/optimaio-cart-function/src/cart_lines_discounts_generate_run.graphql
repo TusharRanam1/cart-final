@@ -1,0 +1,31 @@
+query RunInput {
+  shop {
+    metafield(namespace: "optimaio_cart", key: "campaigns") {
+      value
+    }
+  }
+   cart {
+    lines {
+      id
+      quantity
+      cost {
+        amountPerQuantity {
+          amount
+        }
+      }
+      attribute(key: "isFreeGift") {
+        key
+        value
+      }
+      merchandise {
+        ... on ProductVariant {
+          id
+          title
+        }
+      }
+    }
+  }
+  discount {
+    discountClasses
+  }
+}

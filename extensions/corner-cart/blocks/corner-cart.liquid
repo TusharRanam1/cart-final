@@ -1,636 +1,263 @@
-<!-- Corner Cart Button -->
-<div id="corner-cart">
-  🛒 <span id="corner-cart-count">0</span> Cart
-</div>
-
-<!-- Drawer -->
-<div id="cart-drawer" class="cart-drawer">
-  <div class="cart-drawer__content">
-    
-    <!-- Header -->
-    <div class="cart-drawer__header">
-      <h2>Cart</h2>
-      <button type="button" class="cart-drawer__close">× Close</button>
-    </div>
-
-    <!-- Expired Message -->
-    <div class="cart-drawer__body cart-tab active" data-tab="cart">
-      <div class="cart-drawer__expired">Your cart has expired</div>
-
-      <!-- Alert -->
-      <div class="cart-drawer__alert">Congratulations! You have unlocked Free Gift!</div>
-
-      <!-- Progress bar -->
-      <div class="cart-drawer__progress">
-        <div class="step done">Free Deo</div>
-        <div class="step done">Free Travel Pouch!</div>
-        <div class="step done">Free Watch!</div>
-      </div>
-
-      <!-- Items -->
-      <div class="cart-drawer__items"></div>
-
-      <!-- Complimentary Products -->
-      <div class="cart-drawer__recommendations">
-        <h3>You might also like</h3>
-        <div class="recommendations-list"></div>
-      </div>
-
-      <!-- Summary + Checkout -->
-      <div class="cart-drawer__summary-checkout">
-        <div class="cart-drawer__summary">
-          <div class="discount-row">
-            <span class="discount-label">Discount:</span>
-            <span class="discount-amount">-INR 0</span>
-          </div>
-          <div class="total-row">
-            <span class="total-label">Total:</span>
-            <span class="total-amount">INR 0</span>
-          </div>
-        </div>
-        <div class="cart-drawer__checkout">
-          <button onclick="window.location='/checkout'" class="checkout-btn">
-            Checkout <span class="checkout-icons">🅿️ GPay</span>
-          </button>
-          <p class="checkout-note">Free Gift On Orders Above ₹1250</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Offers Tab Content (empty page) -->
-    <div class="cart-drawer__body cart-tab" data-tab="offers">
-      <div class="offers-empty">
-        <p>No offers available at the moment.</p>
-      </div>
-    </div>
-
-    <!-- Footer tabs -->
-    <div class="cart-drawer__footer">
-      <button class="tab-btn active" data-target="cart">🛒 Cart</button>
-      <button class="tab-btn" data-target="offers">🎁 Offers</button>
-    </div>
-  </div>
-</div>
-
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  // Footer tabs switch
-  const tabs = document.querySelectorAll(".cart-drawer__footer .tab-btn");
-  const tabContents = document.querySelectorAll(".cart-drawer__body.cart-tab");
-
-  tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-      // switch active button
-      tabs.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      // switch tab content
-      const target = btn.dataset.target;
-      tabContents.forEach(tab => {
-        tab.classList.toggle("active", tab.dataset.tab === target);
-      });
-    });
-  });
-});
+  window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 </script>
 
-<style>
-/* Tab system */
-.cart-drawer__body.cart-tab { display: none; }
-.cart-drawer__body.cart-tab.active { display: block; }
-
-.offers-empty {
-  padding: 40px;
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-</style>
-
-
 <script>
-  function loadRecommendations(productId) {
-  fetch(`/recommendations/products.json?product_id=${productId}&intent=complementary&limit=4`)
-    .then(res => res.json())
-    .then(data => {
-      const container = document.querySelector(".recommendations-list");
-      if (!data.products.length) return;
-      container.innerHTML = data.products.map(p => `
-       <div class="recommendation-card">
-    <div class="rec-image">
-      <img src="${p.featured_image}" alt="${p.title}">
-    </div>
-    <div class="rec-content">
-      <p class="rec-title">${p.title}</p>
-      <p class="rec-price">₹${(p.variants[0].price/100).toLocaleString()}</p>
-      
-    </div>
-<div>
-    <button class="rec-add" data-id="${p.variants[0].id}">Add</button>
-    </div>
-  </div>
-      `).join("");
-      // Add to cart
-      container.querySelectorAll(".rec-add").forEach(btn => {
-        btn.addEventListener("click", () => {
-          fetch("/cart/add.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: btn.dataset.id, quantity: 1 })
-          }).then(() => updateCart());
-        });
-      });
-    });
-}
+  window.__OPTIMAIO_CURRENCIES__ = {{ shop.metafields.optimaio_cart.currencies.value | json }};
+  window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 
-document.addEventListener("DOMContentLoaded", () => {
-  const cornerCart = document.getElementById("corner-cart");
-  const cartDrawer = document.getElementById("cart-drawer");
-  const closeBtn = cartDrawer.querySelector(".cart-drawer__close");
-  const itemsContainer = cartDrawer.querySelector(".cart-drawer__items");
-  const totalEl = cartDrawer.querySelector(".total-amount");
-  const discountEl = cartDrawer.querySelector(".discount-amount");
-function updateCart() {
-  fetch('/cart.js')
-    .then(res => res.json())
-    .then(cart => {
-      // update bubble
-      document.getElementById("corner-cart-count").textContent = cart.item_count;
-      // render items
-      itemsContainer.innerHTML = cart.items.map(item => `
-        <div class="cart-item">
-          <div class="cart-item__image">
-            <img src="${item.image}" alt="${item.title}">
-          </div>
-          <div class="cart-item__details">
-            <div class="cart-item__top">
-              <p class="cart-item__title">${item.product_title}
-                ${item.variant_title ? `<span class="variant">${item.variant_title}</span>` : ''}
-              </p>
-              <button class="cart-item__remove" data-key="${item.key}">×</button>
-            </div>
-            <div class="cart-item__pricing">
-              ${item.original_line_price > item.final_line_price 
-                ? `<span class="compare-at">INR ${(item.original_line_price/100).toLocaleString()}</span>` : ''}
-              <span class="price">INR ${(item.final_line_price/100).toLocaleString()}</span>
-            </div>
-            <div class="cart-item__actions">
-              <button class="qty-btn" data-key="${item.key}" data-change="-1">−</button>
-              <span class="cart-item__qty">${item.quantity}</span>
-              <button class="qty-btn" data-key="${item.key}" data-change="1">+</button>
-            </div>
-          </div>
-        </div>
-      `).join("");
-      // ✅ update totals
-      totalEl.textContent = "₹" + (cart.total_price/100).toLocaleString();
-      discountEl.textContent = "– ₹" + ((cart.original_total_price - cart.total_price)/100).toLocaleString();
-      // ✅ now load recommendations
-      if (cart.items.length > 0) {
-        loadRecommendations(cart.items[0].product_id);
-      }
-      // Quantity update
-      itemsContainer.querySelectorAll(".qty-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const change = parseInt(btn.dataset.change);
-          const currentQty = parseInt(btn.parentNode.querySelector(".cart-item__qty").textContent);
-          const newQty = currentQty + change;
-          if (newQty < 1) return;
-          fetch('/cart/change.js', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: key, quantity: newQty })
-          }).then(() => updateCart());
-        });
-      });
-      // Remove
-      itemsContainer.querySelectorAll(".cart-item__remove").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          fetch('/cart/change.js', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: key, quantity: 0 })
-          }).then(() => updateCart());
-        });
-      });
-    });
-}
-
-  function openDrawer() {
-    updateCart();
-    cartDrawer.classList.add("open");
-  }
-  cornerCart.addEventListener("click", openDrawer);
-  const headerCartIcon = document.querySelector("#cart-icon-bubble, .header__icon--cart, a[href='/cart']");
-  if (headerCartIcon) {
-    headerCartIcon.addEventListener("click", (e) => {
-      e.preventDefault();
-      openDrawer();
-    });
-  }
-  closeBtn.addEventListener("click", () => {
-    cartDrawer.classList.remove("open");
-  });
-  // Intercept add-to-cart
-  const originalFetch = window.fetch;
-  window.fetch = async (...args) => {
-    const response = await originalFetch(...args);
-    try {
-      const url = args[0];
-      if (typeof url === "string" && url.includes("/cart/add")) {
-        setTimeout(openDrawer, 300);
-      }
-    } catch(e) {}
-    return response;
+ // Store only latest fetch time + last data
+  window.__OptimaioCampaignCache = {
+    data: null,
+    fetchTime: 0  // milliseconds
   };
-  updateCart();
-});
+
+  window.fetchOptimaioCampaign = async function() {
+    console.log("%c[Optimaio] 🔄 Fetching fresh campaign…", "color:#007bff");
+
+    // ⏱ Start timer
+    const startTime = performance.now();
+
+    try {
+      const res = await fetch("/apps/optimaio-cart", { cache: "no-store" });
+
+      // HTTP error handling
+      if (!res.ok) {
+        console.error("[Optimaio] ❌ HTTP Error:", res.status);
+        return null;
+      }
+
+      const data = await res.json();
+
+      // ⏱ End timer
+      const endTime = performance.now();
+      window.__OptimaioCampaignCache.fetchTime = Math.round(endTime - startTime);
+
+      console.log(
+        `%c[Optimaio] ✅ Fresh campaign received in ${window.__OptimaioCampaignCache.fetchTime}ms`,
+        "color:#4caf50"
+      );
+
+      window.__OptimaioCampaignCache.data = data;
+
+      return data;
+
+    } catch (err) {
+      const endTime = performance.now();
+      window.__OptimaioCampaignCache.fetchTime = Math.round(endTime - startTime);
+
+      console.error(
+        `%c[Optimaio] 🚨 Fetch failed after ${window.__OptimaioCampaignCache.fetchTime}ms`,
+        "color:red"
+      );
+
+      return null;
+    }
+  };
 </script>
 
+<script src="{{ 'optimaio.js' | asset_url }}" defer></script>
+ 
+ {% assign style = 'coolj' %}
+
+{{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
+
+{% case style %}
+  {% when 'cool' %}
+    {{ 'optimaio-theme-cool.css' | asset_url | stylesheet_tag }}
+    {% when 'dark' %}
+    {{ 'optimaio-theme-dark.css' | asset_url | stylesheet_tag }}
+  {% else %}
+    {{ 'optimaio-theme-minimal.css' | asset_url | stylesheet_tag }}
+{% endcase %}
+
+ 
+<!-- Optimaio Universal Responsive Cart Drawer -->
+<div id="optimaio-corner-cart">
+  🛒 <span id="optimaio-corner-cart-count">0</span>
+</div>
+ 
+<div id="optimaio-cart-drawer" class="optimaio-cart-drawer" data-active-tab="cart">
+  <!-- Header -->
+  <div class="optimaio-cart-drawer__header">
+    <h2>My Cart</h2>
+    <button type="button" class="optimaio-cart-drawer__close">×</button>
+  </div>
+ 
+  <!-- Middle Scrollable Body -->
+  <div class="optimaio-cart-drawer__middle">
+ 
+    <!-- TAB: CART -->
+    <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
+      {% render 'optimaio-progress-bar' %}
+
+      {% comment %} <!-- 🔒 Hidden template used by BXGY to render the instant gift card -->
+<template id="optimaio-free-gift-template">
+  <div class="optimaio-cart-item-card optimaio-free-gift">
+    <div class="optimaio-cart-item__image">
+      <img src="" alt="Free gift" />
+    </div>
+    <div class="optimaio-cart-item__info">
+      <div class="optimaio-cart-item__top">
+        <p class="optimaio-cart-item__title"></p>
+        <span class="optimaio-free-gift-status">Adding…</span>
+      </div>
+      <div class="optimaio-cart-item__bottom">
+        <div class="optimaio-cart-item__actions">
+          <span class="optimaio-cart-item__qty">1</span>
+        </div>
+        <div class="optimaio-cart-item__pricing">
+          <span class="optimaio-price">—</span>
+        </div>
+      </div>
+      <div class="optimaio-cart-item__discount"><span>Free Gift Pending</span></div>
+    </div>
+  </div>
+</template> {% endcomment %}
+
+      <div class="optimaio-cart-drawer__items"></div>
+ 
+      <div class="optimaio-cart-drawer__empty" style="display:none;">
+        <p>Your cart is empty</p>
+        <a href="/" class="optimaio-continue-btn">Continue Shopping</a>
+      </div>
+ 
+      <div class="optimaio-cart-drawer__recommendations">
+        <h3>You might also like</h3>
+        <div class="optimaio-recommendations-list"></div>
+      </div>
+    </div>
+ 
+    <!-- TAB: OFFERS -->
+    <div class="optimaio-cart-tab optimaio-cart-tab--offers" data-tab="offers">
+      {% render 'optimaio-offers' %}
+    </div>
+  </div>
+ 
+  <!-- Footer Summary -->
+  <div class="optimaio-cart-drawer__summary-checkout">
+    <div class="optimaio-cart-drawer__summary">
+      <div class="optimaio-discount-row">
+        <span class="optimaio-discount-label">Discount:</span>
+        <span class="optimaio-discount-amount">₹0</span>
+      </div>
+      <div class="optimaio-total-row">
+        <span class="optimaio-total-label">Total:</span>
+        <span class="optimaio-total-amount">₹0</span>
+      </div>
+    </div>
+    <button onclick="window.location='/checkout'" class="optimaio-checkout-btn">Proceed to Checkout</button>
+  </div>
+ 
+  <!-- Footer Tabs -->
+  <div class="optimaio-cart-drawer__footer">
+    <button class="optimaio-tab-btn active" data-target="cart">🛒 Cart</button>
+    <button class="optimaio-tab-btn" data-target="offers">🎁 Offers</button>
+  </div>
+</div>
+ 
+
+
+
+{% comment %} <script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> {% endcomment %}
+
+
+<script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
+<script src="{{ 'bxgy.js' | asset_url }}" defer></script> 
 <style>
-
-  .recommendations-list {
-    display: flex;
-  flex-direction: row;   /* row for horizontal scroll */
-  gap: 12px;
-  overflow-x: auto;      /* enable horizontal scrolling */
-  padding-bottom: 8px;
-  scroll-snap-type: x mandatory; /* smooth snap */
-}
-.recommendation-card {
-  flex: 0 0 75%;       /* fixed card width */
-  scroll-snap-align: start;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
-}
-.rec-image img {
-  display: block;   /* ✅ removes bottom inline gap */
-  width: 90px;
-  height: 90px;
-  border-radius: 6px;
-  object-fit: cover;
-}
-.rec-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.rec-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-}
-.rec-price {
-  font-size: 13px;
-  font-weight: 600;
-  color: #222;
-}
-.rec-add {
-  margin-top: 4px;
-  align-self: flex-start;
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-  .cart-drawer__recommendations {
-  padding: 0 12px 12px 12px;
-  background: #fff7f9;
-  border-top: 1px solid #eee;
-}
-.cart-drawer__recommendations h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-{% comment %} .recommendations-list {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-}
-.recommendation-card {
-  flex: 0 0 90px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 8px;
-  text-align: center;
-  background: #fff;
-}
-.recommendation-card img {
-  width: 100%;
-  border-radius: 6px;
-}
-.rec-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 6px 0;
-}
-.rec-price {
-  font-size: 13px;
-  font-weight: 600;
-  color: #222;
-}
-.rec-add {
-  margin-top: 6px;
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-} {% endcomment %}
-  .cart-drawer{
-  padding:2%;
-  }
-/* Make items list scrollable */
-.cart-drawer__items {
-  max-height: calc(100vh - 280px); /* adjust depending on header+summary+footer height */
-  overflow-y: auto;
-  {% comment %} padding-right: 6px; /* for scroll gap */ {% endcomment %}
-}
-/* Optional: nice thin scrollbar */
-.cart-drawer__items::-webkit-scrollbar {
-  width: 6px;
-}
-.cart-drawer__items::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
-}
-  {% comment %} .cart-drawer__items{
-margin:4%;
-  } {% endcomment %}
-   .cart-drawer__summary {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.discount-row, .total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.discount-label {
-  color: #a33;
-  font-size: 14px;
-}
-.discount-amount {
-  color: #a33;
-  font-weight: 600;
-  font-size: 14px;
-}
-.total-label {
-  font-weight: 600;
-  font-size: 15px;
-}
-.total-amount {
-  font-weight: 700;
-  font-size: 16px;
-}
-/* Drawer base */
-.cart-drawer {
-  position: fixed;
-  top: 0; right: 0;
-  width: 420px; height: 100%;
-  background: #ffe6eb; /* ✅ Soft Pink Background */
-  box-shadow: -2px 0 12px rgba(0,0,0,0.2);
-  z-index: 10000;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-}
-.cart-drawer.open { transform: translateX(0); }
-/* Header */
-.cart-drawer__header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-}
-.cart-drawer__header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-.cart-drawer__close { background: none; border: none; font-size: 14px; cursor: pointer; }
-/* Expired message */
-.cart-drawer__expired {
-  background: #eee;
-  text-align: center;
-  padding: 6px;
-  font-size: 13px;
-  color: #555;
-}
-/* Progress bar */
-.cart-drawer__alert {
-  background: #fcecec;
-  padding: 8px;
-  text-align: center;
-  font-size: 13px;
-  color: #a33;
-}
-.cart-drawer__progress {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-.cart-drawer__progress .step {
-  flex: 1; text-align: center;
-  border-bottom: 3px solid #ddd;
-  padding-bottom: 4px;
-}
-.cart-drawer__progress .done {
-  border-color: #d48b8b;
-  font-weight: 600;
-  color: #222;
-}
-/* Product cards */
-.cart-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.cart-item__image img {
-  width: 80px; height: auto; border-radius: 6px;
-}
-.cart-item__details { flex: 1; }
-.cart-item__top { display: flex; justify-content: space-between; align-items: flex-start; }
-.cart-item__remove { border: none; background: none; font-size: 18px; color: #999; cursor: pointer; }
-
-
-
-/* Badge */
-/* Summary */
-{% comment %} .cart-drawer__summary {
-  padding: 12px;
-  border-top: 1px solid #eee;
-} {% endcomment %}
-.cart-drawer__summary-checkout {
-    {% comment %} position: fixed; {% endcomment %}
-    width: 100%;
-    bottom: 10%;
-    background: #f8f8f8;
-    border-radius: 12px;
-    overflow: hidden;
-    padding: 12px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);/* optional soft shadow */
-}
-.cart-drawer__summary,
-.cart-drawer__checkout {
-  border: none;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-}
-.cart-drawer__summary .discount { color: #a33; }
-.cart-drawer__summary .total { font-weight: 700; font-size: 16px; margin-top: 6px; }
-/* Checkout */
-{% comment %} .cart-drawer__checkout {
-  background: #d48b8b;
-  padding: 16px;
-  text-align: center;
-} {% endcomment %}
-.checkout-btn {
-  background: #000; color: #fff;
-  padding: 12px 20px; border-radius: 6px;
-  font-size: 16px; font-weight: 600;
-  width: 100%; cursor: pointer;
-}
-.checkout-icons { margin-left: 6px; font-size: 12px; }
-.checkout-note { margin: 6px 0 0; font-size: 12px; color: #fff; }
-/* Footer tabs */
-.cart-drawer__footer {
-     position: fixed;
-    bottom: -3px;
-    left: 0;
-    margin: 4%;
-    right: 0;
-    background: #fff;
-    display: flex;
-    justify-content: space-around;
-    border-top: 1px solid #eee;
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
-    z-index: 10;
-}
-
-.cart-drawer__footer button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.cart-drawer__footer button.active {
-  color: #d48b8b;
-  font-weight: 600;
+  /* ✨ Placeholder shimmer for pending free gift */
+.optimaio-gift-placeholder {
+  opacity: 0.85;
   position: relative;
+  overflow: hidden;
 }
-.cart-drawer__footer button.active::after {
+.optimaio-gift-placeholder::after {
   content: "";
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #d48b8b;
-  border-radius: 2px;
+  top: 0; left: -150px;
+  width: 100px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: optimaio-shimmer 1.2s infinite;
+}
+@keyframes optimaio-shimmer {
+  100% { left: 150%; }
 }
 
-/* Title */
-.cart-item__title {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-.cart-item__title .variant {
-  display: block;
-  font-size: 13px;
-  color: #666;
-  font-weight: 400;
-}
-/* Pricing */
-.cart-item__pricing {
-  margin: 6px 0;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.cart-item__pricing .compare-at {
-  text-decoration: line-through;
-  color: #999;
-  font-size: 13px;
-}
-.cart-item__pricing .price {
-  font-weight: 700;
-  font-size: 14px;
-  color: #222;
-}
-/* Qty stepper */
-.cart-item__actions {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  overflow: hidden;
-  width: fit-content;
-  margin-top: 6px;
-}
-.qty-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f9f9f9;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.cart-item__qty {
-  width: 40px;
-  text-align: center;
-  font-weight: 600;
-  background: #fff;
-}
-/* Green Badge */
-.cart-item__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  background: #e6f4ea;   /* light green */
-  color: #1b5e20;        /* dark green */
-  font-size: 13px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 20px;   /* pill */
-}
-.cart-item__badge::before {
-  content: "🏷️";
-}
 </style>
-
-
+ 
+{% comment %} <style>
+ 
+/* ✅ All styles prefixed with optimaio- */
+.optimaio-cart-item__discount {
+  font-size: 12px;
+  color: #a33;
+  margin-top: 4px;
+  background: #fdeaea;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+ 
+.optimaio-cart-item-card{display:flex;gap:12px;background:#fff;border:1px solid #eee;border-radius:10px;padding:12px;position:relative;}
+.optimaio-cart-item__image img{width:70px;height:70px;border-radius:8px;object-fit:cover;}
+.optimaio-cart-item__info{flex:1;display:flex;flex-direction:column;justify-content:space-between;}
+.optimaio-cart-item__top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.optimaio-cart-item__title{font-weight:600;margin:0;line-height:1.4;flex:1;white-space:normal;word-break:break-word;}
+.optimaio-cart-item__remove{flex-shrink:0;background:none;border:none;font-size:16px;cursor:pointer;color:#888;line-height:1;}
+.optimaio-cart-item__remove:hover{color:#d33;}
+.optimaio-cart-item__variant{font-size:12px;color:#666;margin:2px 0 6px;}
+.optimaio-cart-item__bottom{display:flex;justify-content:space-between;align-items:center;margin-top:auto;}
+.optimaio-cart-item__pricing{display:flex;gap:6px;align-items:baseline;}
+.optimaio-compare-at{text-decoration:line-through;color:#999;font-size:12px;}
+.optimaio-price{font-weight:700;color:#222;}
+.optimaio-cart-tab{display:none;}
+.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart{display:block;}
+.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-tab--offers{display:block;}
+.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-drawer__summary-checkout{display:none;}
+.optimaio-qty-btn.loading,.optimaio-cart-item__remove.loading,.optimaio-rec-add.loading{position:relative;color:transparent!important;pointer-events:none;}
+.optimaio-qty-btn.loading::after,.optimaio-cart-item__remove.loading::after,.optimaio-rec-add.loading::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:12px;border:2px solid #999;border-top-color:transparent;border-radius:50%;transform:translate(-50%,-50%);animation:optimaio-spin .6s linear infinite;}
+@keyframes optimaio-spin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+#optimaio-corner-cart,.optimaio-cart-drawer{font-family:Inter,sans-serif;box-sizing:border-box;}
+#optimaio-corner-cart{position:fixed;bottom:20px;right:20px;background:#000;color:#fff;padding:10px 16px;border-radius:40px;cursor:pointer;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+#optimaio-corner-cart span{font-weight:700;margin:0 4px;}
+.optimaio-cart-drawer{position:fixed;top:0;right:0;width:90%;max-width:420px;height:100%;background:#fff7f8;transform:translateX(100%);transition:transform .3s ease;box-shadow:-3px 0 12px rgba(0,0,0,0.25);z-index:10000;display:flex;flex-direction:column;}
+.optimaio-cart-drawer.open{transform:translateX(0);}
+.optimaio-cart-drawer__header{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;z-index:5;}
+.optimaio-cart-drawer__header h2{font-size:18px;margin:0;font-weight:600;}
+.optimaio-cart-drawer__close{font-size:20px;background:none;border:none;cursor:pointer;}
+.optimaio-cart-drawer__middle{flex:1;overflow-y:auto;padding:12px 16px;}
+.optimaio-cart-drawer__middle::-webkit-scrollbar{width:6px;}
+.optimaio-cart-drawer__middle::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
+.optimaio-cart-drawer__alert{background:#fdeaea;color:#a33;padding:8px;border-radius:8px;text-align:center;font-size:13px;margin-bottom:8px;}
+.optimaio-cart-drawer__progress{display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;}
+.optimaio-cart-drawer__progress .optimaio-step{flex:1;text-align:center;border-bottom:2px solid #ccc;padding-bottom:3px;}
+.optimaio-cart-drawer__progress .done{border-color:#d48b8b;font-weight:600;}
+.optimaio-cart-drawer__items{display:flex;flex-direction:column;gap:10px;}
+.optimaio-cart-drawer__empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;color:#666;text-align:center;gap:12px;}
+.optimaio-continue-btn{background:#000;color:#fff;padding:10px 20px;border-radius:25px;font-size:14px;text-decoration:none;}
+.optimaio-recommendations-list{display:flex;overflow-x:auto;gap:10px;padding-bottom:8px;}
+.optimaio-recommendation-card{flex:0 0 75%;background:#fff;border:1px solid #eee;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px;}
+.optimaio-rec-image img{width:60px;height:60px;border-radius:6px;object-fit:cover;}
+.optimaio-rec-title{font-size:12px;font-weight:600;margin:0;}
+.optimaio-rec-price{font-size:12px;font-weight:500;color:#222;margin:2px 0;}
+.optimaio-rec-add{background:#000;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:12px;}
+.optimaio-cart-drawer__summary-checkout{flex-shrink:0;border-top:1px solid #eee;padding:12px 14px;background:#fff;}
+.optimaio-discount-row,.optimaio-total-row{display:flex;justify-content:space-between;font-size:14px;}
+.optimaio-discount-label,.optimaio-discount-amount{color:#a33;}
+.optimaio-total-label{font-weight:600;}
+.optimaio-total-amount{font-weight:700;}
+.optimaio-checkout-btn{margin-top:8px;width:100%;background:#000;color:#fff;padding:10px;border:none;border-radius:6px;font-weight:600;cursor:pointer;}
+.optimaio-cart-drawer__footer{flex-shrink:0;display:flex;justify-content:space-around;border-top:1px solid #eee;background:#fff;padding:12px;position:sticky;bottom:0;}
+.optimaio-cart-drawer__footer button{border:none;background:none;cursor:pointer;font-size:14px;font-weight:500;color:#444;}
+.optimaio-cart-drawer__footer button.active{color:#d48b8b;font-weight:600;}
+@media (max-width:768px){#optimaio-corner-cart{bottom:15px;right:15px;font-size:13px;padding:8px 14px;}}
+</style> {% endcomment %}
+ 
 {% schema %}
 {
-  "name": "Optimaio Corner cart",
-  "target": "body",
-  "settings": []
+"name": "Optimaio Corner Cart",
+"target": "body",
+"settings": []
 }
 {% endschema %}
+ 

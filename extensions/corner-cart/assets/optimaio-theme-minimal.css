@@ -1,0 +1,40 @@
+/* =====================================================
+   OPTIMAIO CART DRAWER - THEME: MINIMAL
+   (Default soft pink & black theme — matches your current working version)
+===================================================== */
+
+:root {
+  /* ---------- Base Colors ---------- */
+  --drawer-bg: #fff7f8;
+  --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  --summary-bg: #ffffff;
+  --footer-bg: #ffffff;
+
+  --border-color: #eee;
+  --scrollbar-thumb: #ccc;
+
+  /* ---------- Text Colors ---------- */
+  --text-color: #222;
+  --text-muted: #666;
+
+  /* ---------- Buttons ---------- */
+  --btn-bg: #000;
+  --btn-color: #fff;
+
+  /* ---------- Accents ---------- */
+  --accent-color: #d48b8b;
+
+  /* ---------- Alerts / Progress ---------- */
+  --alert-bg: #fdeaea;
+  --alert-text: #a33;
+  --progress-active: #d48b8b;
+  --progress-inactive: #ccc;
+
+  /* ---------- Discounts ---------- */
+  --discount-bg: #fdeaea;
+  --discount-text: #a33;
+
+  /* ---------- Spinner ---------- */
+  --spinner-color: #999;
+}
