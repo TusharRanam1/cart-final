@@ -2,6 +2,9 @@
 import { authenticate } from "../shopify.server";
 import { createClient } from "redis";
  
+// -------------------------------
+// Redis (NO TOP-LEVEL AWAIT)
+// -------------------------------
 const redis = createClient({
   username: "default",
   password: "TAqxfnXDpLQv9QG64FZNRsdk6Daq0xrL",
@@ -12,70 +15,103 @@ const redis = createClient({
 });
  
 redis.on("error", (err) => console.error("Redis Error:", err));
-await redis.connect();
  
+let redisReady = null;
+ 
+function connectRedis() {
+  if (!redisReady) {
+    console.log("🔄 [Debug] Connecting to Redis...");
+    const t0 = performance.now();
+ 
+    redisReady = redis.connect().then(() => {
+      console.log(`🟢 [Debug] Redis connected in ${Math.round(performance.now() - t0)} ms`);
+    }).catch((err) => {
+      redisReady = null;
+      console.error("❌ [Debug] Redis connection failed:", err);
+      throw err;
+    });
+  }
+  return redisReady;
+}
+ 
+async function getRedis() {
+  await connectRedis();
+  return redis;
+}
+ 
+// -------------------------------
 // Safe JSON parser
+// -------------------------------
 function safeJsonParse(str, fallback = {}) {
   if (!str || typeof str !== "string") return fallback;
   try {
-    const parsed = JSON.parse(str);
-    return parsed && typeof parsed === "object" ? parsed : fallback;
+    return JSON.parse(str);
   } catch {
     return fallback;
   }
 }
  
 export const loader = async ({ request }) => {
+  const T_START = performance.now();
+  console.log("🚀 [Loader Debug] optimaio-cart loader START");
+ 
   try {
-    // Authenticate Shopify App Proxy
+    // Authenticate
     const auth = await authenticate.public.appProxy(request);
     const { admin } = auth;
     let { shop } = auth;
  
-    // Extract shop from URL as fallback
+    // Fallback shop
     const url = new URL(request.url);
     const shopFromQuery = url.searchParams.get("shop");
- 
-    if (!shop && shopFromQuery) {
-      shop = shopFromQuery;
-    }
+    if (!shop && shopFromQuery) shop = shopFromQuery;
  
     if (!shop) {
-      console.error("❌ SHOP IS STILL UNDEFINED. URL:", url.href);
-      return new Response(JSON.stringify({ error: "Missing shop parameter" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error("❌ [Debug] SHOP IS STILL UNDEFINED.");
+      return new Response(JSON.stringify({ error: "Missing shop" }), { status: 400 });
     }
  
-    console.log("✔ Final shop value:", shop);
- 
     if (!admin) {
-      return new Response(JSON.stringify({ error: "Unauthorized proxy" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error("❌ [Debug] No Admin session");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
  
     const redisKey = `campaigns:${shop}`;
+    console.log(`📌 [Debug] Redis key: ${redisKey}`);
  
-    console.log("📥 URL:", url.toString());
-    console.log("🔍 Searching Redis for:", redisKey);
+    // -------------------------------
+    // Redis GET
+    // -------------------------------
+    const T_REDIS_GET_START = performance.now();
+    const client = await getRedis();
  
-    // 1️⃣ Try Redis
-    const fromRedis = await redis.get(redisKey);
+    let fromRedis = null;
+    try {
+      fromRedis = await client.get(redisKey);
+    } catch (err) {
+      console.error("❌ [Debug] Redis GET error:", err);
+    }
+ 
+    const T_REDIS_GET_END = performance.now();
+    console.log(`🟦 [Debug] Redis GET time: ${Math.round(T_REDIS_GET_END - T_REDIS_GET_START)} ms`);
  
     if (fromRedis) {
-      console.log("📤 Returning campaigns FROM REDIS");
+      console.log("🟢 [Debug] Redis HIT");
       const redisObj = safeJsonParse(fromRedis, { data: {} });
-      const result = redisObj.data && typeof redisObj.data === "object" ? redisObj.data : {};
+      const result = redisObj.data || {};
+ 
+      console.log(`⏱️ [Debug] Total loader time (Redis Hit): ${Math.round(performance.now() - T_START)} ms`);
       return new Response(JSON.stringify(result), {
         headers: { "Content-Type": "application/json" },
       });
     }
  
-    // 2️⃣ Fallback to Shopify
-    console.log("⚠️ Not found in Redis → Using Shopify metafield");
+    console.log("🔴 [Debug] Redis MISS – falling back to Shopify metafield");
+ 
+    // -------------------------------
+    // Shopify GraphQL Fetch
+    // -------------------------------
+    const T_SHOPIFY_START = performance.now();
  
     const gql = await admin.graphql(`
       query {
@@ -87,33 +123,45 @@ export const loader = async ({ request }) => {
       }
     `);
  
-    const data = await gql.json();
-    let metafieldValue = data?.data?.shop?.metafield?.value;
+    const shopifyJson = await gql.json();
+    const metafieldValue = shopifyJson?.data?.shop?.metafield?.value;
  
-    const badValues = [undefined, null, "", "undefined", "null"];
-    if (badValues.includes(metafieldValue)) metafieldValue = "{}";
+    const T_SHOPIFY_END = performance.now();
+    console.log(`🟧 [Debug] Shopify GraphQL time: ${Math.round(T_SHOPIFY_END - T_SHOPIFY_START)} ms`);
  
-    const parsed = safeJsonParse(metafieldValue, {});
+    let parsed = safeJsonParse(metafieldValue, {});
  
-    await redis.set(
-      redisKey,
-      JSON.stringify({
-        data: parsed,
-        updatedAt: new Date().toISOString(),
-      })
-    );
+    // -------------------------------
+    // Redis SET
+    // -------------------------------
+    const T_REDIS_SET_START = performance.now();
+    try {
+      await client.set(
+        redisKey,
+        JSON.stringify({
+          data: parsed,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+      console.log("🟢 [Debug] Redis SET success");
+    } catch (err) {
+      console.error("❌ [Debug] Redis SET error:", err);
+    }
+    const T_REDIS_SET_END = performance.now();
+    console.log(`🟪 [Debug] Redis SET time: ${Math.round(T_REDIS_SET_END - T_REDIS_SET_START)} ms`);
+ 
+    console.log(`⏱️ [Debug] Total loader time (Shopify Fallback): ${Math.round(performance.now() - T_START)} ms`);
  
     return new Response(JSON.stringify(parsed), {
       headers: { "Content-Type": "application/json" },
     });
  
   } catch (err) {
-    console.error("⚠️ Loader failed:", err);
-    return new Response(JSON.stringify({ error: "Server error", details: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("🚨 [Loader Debug] Loader failed:", err);
+ 
+    return new Response(
+      JSON.stringify({ error: "Server error", details: err.message }),
+      { status: 500 }
+    );
   }
 };
- 
- 

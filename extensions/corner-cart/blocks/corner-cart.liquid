@@ -19,7 +19,7 @@
     const startTime = performance.now();
 
     try {
-      const res = await fetch("/apps/optimaio-cart", { cache: "no-store" });
+      const res = await fetch("/apps/optimaio-cart/activeCampaigns", { cache: "no-store" });
 
       // HTTP error handling
       if (!res.ok) {
@@ -34,7 +34,7 @@
       window.__OptimaioCampaignCache.fetchTime = Math.round(endTime - startTime);
 
       console.log(
-        `%c[Optimaio] ✅ Fresh campaign received in ${window.__OptimaioCampaignCache.fetchTime}ms`,
+        `%c[Optimaio] ✅ Fresh campaign received in liquid ${window.__OptimaioCampaignCache.fetchTime}ms`,
         "color:#4caf50"
       );
 

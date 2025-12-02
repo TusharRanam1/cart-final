@@ -2,19 +2,35 @@ import { authenticate } from "../shopify.server";
 import { createClient } from "redis";
  
 // -------------------------------
-//  Redis Client
+//  Redis Client (NO TOP-LEVEL AWAIT)
 // -------------------------------
 const redis = createClient({
-  username: 'default',
-  password: 'TAqxfnXDpLQv9QG64FZNRsdk6Daq0xrL',
+  username: "default",
+  password: "TAqxfnXDpLQv9QG64FZNRsdk6Daq0xrL",
   socket: {
-    host: 'redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com',
-    port: 16663
-  }
+    host: "redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com",
+    port: 16663,
+  },
 });
  
-redis.on('error', err => console.log('Redis Client Error', err));
-await redis.connect();
+redis.on("error", (err) => console.log("Redis Client Error", err));
+ 
+let redisReady = null;
+ 
+function connectRedis() {
+  if (!redisReady) {
+    redisReady = redis.connect().catch((err) => {
+      redisReady = null;
+      throw err;
+    });
+  }
+  return redisReady;
+}
+ 
+async function getRedis() {
+  await connectRedis();
+  return redis;
+}
  
 // -------------------------------
 //  Webhook Handler
@@ -57,7 +73,6 @@ export const action = async ({ request }) => {
  
     const metafield = shopData.metafield;
  
-    // Shopify metafield value → JSON
     let newCampaigns = null;
     try {
       newCampaigns = metafield?.value ? JSON.parse(metafield.value) : null;
@@ -65,10 +80,12 @@ export const action = async ({ request }) => {
       console.error("⚠️ Failed to parse campaigns metafield JSON");
     }
  
-    // 2️⃣ Get existing campaigns from Redis
+    // 2️⃣ Read existing campaigns from Redis
+    const client = await getRedis();
     const redisKey = `campaigns:${shop}`;
-    const oldValue = await redis.get(redisKey);
-   
+ 
+    const oldValue = await client.get(redisKey);
+ 
     let oldCampaigns = null;
     try {
       oldCampaigns = oldValue ? JSON.parse(oldValue) : null;
@@ -87,18 +104,18 @@ export const action = async ({ request }) => {
     // 4️⃣ Save new campaign data to Redis
     console.log("🔄 Campaign metafield changed — updating Redis…");
  
-    await redis.set(redisKey, JSON.stringify({
-      data: newCampaigns,
-      updatedAt: new Date().toISOString(),
-    }));
+    await client.set(
+      redisKey,
+      JSON.stringify({
+        data: newCampaigns,
+        updatedAt: new Date().toISOString(),
+      })
+    );
  
     console.log(`✅ Campaigns updated in Redis for ${shop}`);
- 
   } catch (err) {
     console.error("🚨 Error updating campaigns:", err);
   }
  
   return new Response("ok");
 };
- 
- 
