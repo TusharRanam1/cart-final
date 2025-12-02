@@ -2,7 +2,7 @@
 
 client_id = "0b64e6a6c160ab84c7805f6a2522c4c9"
 name = "tushar-final-cart"
-application_url = "https://example.com"
+application_url = "https://cart-final.onrender.com"
 embedded = true
 
 [build]
@@ -20,7 +20,7 @@ api_version = "2025-10"
 scopes = "read_discounts,read_products,write_cart_transforms,write_discounts,write_products,write_app_proxy"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://cart-final.onrender.com/api/auth" ]
 
 [app_proxy]
 url = "/optimaio-cart"

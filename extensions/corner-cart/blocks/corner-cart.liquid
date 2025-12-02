@@ -1,12 +1,67 @@
 <script>
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 </script>
+ 
+
+<script>
+/* ----------------------------------------------------
+   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE (1 fetch only)
+---------------------------------------------------- */
+
+window.__OPTIMIAO_CAMPAIGN_CACHE__ = {
+  data: null,
+  time: 0,
+  pending: null,
+  TTL: 60000 // 5 sec or whatever you want
+};
+
+async function getCampaignDataCached() {
+  const cache = window.__OPTIMIAO_CAMPAIGN_CACHE__;
+  const now = Date.now();
+
+  // 🔄 Already fetching → return same promise
+  if (cache.pending) return cache.pending;
+
+  // 🟩 Fresh cache → return data
+  if (cache.data && now - cache.time < cache.TTL) {
+    return cache.data;
+  }
+
+  // 🔵 Start a SINGLE fetch for all scripts
+  const start = performance.now();
+
+  cache.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
+    cache: "no-store"
+  })
+    .then(res => res.json())
+    .then(json => {
+      cache.data = json;
+      cache.time = Date.now();
+
+      console.log(
+        `%c⚡ Optimaio Main Fetch: ${Math.round(performance.now() - start)}ms`,
+        "color:#4caf50",
+        json
+      );
+
+      cache.pending = null;
+      return json;
+    })
+    .catch(err => {
+      cache.pending = null;
+      console.warn("⚠️ Optimaio Main Fetch Failed", err);
+      throw err;
+    });
+
+  return cache.pending;
+}
+</script>
 
 <script>
   window.__OPTIMAIO_CURRENCIES__ = {{ shop.metafields.optimaio_cart.currencies.value | json }};
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 
- // Store only latest fetch time + last data
+ {% comment %} // Store only latest fetch time + last data
   window.__OptimaioCampaignCache = {
     data: null,
     fetchTime: 0  // milliseconds
@@ -53,7 +108,7 @@
 
       return null;
     }
-  };
+  }; {% endcomment %}
 </script>
 
 <script src="{{ 'optimaio.js' | asset_url }}" defer></script>

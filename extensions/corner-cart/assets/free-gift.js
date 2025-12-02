@@ -56,29 +56,39 @@
 // 🎯 CAMPAIGN DATA (with fetch timer)
 // ----------------------------
 async function parseCampaignData() {
-  const start = performance.now(); // ⏱️ START TIMER
+  const start = performance.now(); // ⏱ Start timer
 
   try {
-    const res = await fetch("/apps/optimaio-cart/activeCampaigns", { cache: "no-store" });
-    const data = await res.json();
+    // 🟦 Use global cached function
+    const data = await getCampaignDataCached();
 
-    const end = performance.now(); // ⏱️ END TIMER
+    const end = performance.now(); // ⏱ End timer
     const timeTaken = Math.round(end - start);
 
-    console.log(`⚡ Free Gift Campaign fetch time: ${timeTaken} ms`, data);
+    console.log(
+      `⚡ Free Gift Campaign (cached) fetched in ${timeTaken} ms`,
+      data
+    );
 
-    const active = (data.campaigns || []).filter(c => c.status === "active");
-    if (active.length) {
-      active.sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
-      return active[0];
-    }
+    if (!data || !data.campaigns) return null;
+
+    const active = data.campaigns.filter(c => c.status === "active");
+    if (!active.length) return null;
+
+    active.sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+
+    return active[0];
   } catch (err) {
     const end = performance.now();
     const timeTaken = Math.round(end - start);
-    console.warn(`⚠️ Free Gift Campaign fetch FAILED after ${timeTaken} ms`, err);
-  }
 
-  return null;
+    console.warn(
+      `⚠️ Free Gift Campaign fetch FAILED after ${timeTaken} ms`,
+      err
+    );
+
+    return null;
+  }
 }
 
 

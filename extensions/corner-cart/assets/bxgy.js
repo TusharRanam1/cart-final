@@ -48,17 +48,17 @@
   // 🧠 FETCH CAMPAIGN DATA (cached for 1 minute)
   // ----------------------------
 
-  async function parseCampaignData() {
+async function parseCampaignData() {
   const startTime = performance.now();   // ⏱️ START TIMER
 
   try {
-    const res = await fetch("/apps/optimaio-cart/activeCampaigns", { cache: "no-store" });
-    const data = await res.json();
+    // 🟦 Fetch via MAIN shared fetcher (NO duplicate API call)
+    const data = await getCampaignDataCached();
 
     const endTime = performance.now();   // ⏱️ END TIMER
     const duration = Math.round(endTime - startTime);
 
-    console.log(`⚡ BXGY Campaign fetch time: ${duration} ms`, data);
+    console.log(`⚡ BXGY Campaign (cached) fetched in ${duration} ms`, data);
 
     return data;
 
@@ -71,6 +71,7 @@
     return null;
   }
 }
+
 
 
   // ----------------------------
