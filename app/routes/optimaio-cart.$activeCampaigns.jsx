@@ -6,12 +6,12 @@ import { createClient } from "redis";
 // Redis (NO TOP-LEVEL AWAIT)
 // -------------------------------
 const redis = createClient({
-  username: "default",
-  password: "TAqxfnXDpLQv9QG64FZNRsdk6Daq0xrL",
-  socket: {
-    host: "redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com",
-    port: 16663,
-  },
+   username: 'default',
+    password: 'WeBH2vGxisQX0AL91o96tE3sM5srmISI',
+    socket: {
+        host: 'redis-10630.crce199.us-west-2-2.ec2.cloud.redislabs.com',
+        port: 10630
+    },
 });
  
 redis.on("error", (err) => console.error("Redis Error:", err));
