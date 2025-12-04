@@ -24,10 +24,9 @@
   // 🛒 ALWAYS-FRESH CART FETCH
   // ----------------------------
   async function getCart() {
-    const res = await fetch("/cart.js", { cache: "no-store" });
-    const json = await res.json();
-    return json;
-  }
+  return await window.OptimaioCartController.getCart();
+}
+
 
   async function cartChange(action, payload) {
     await fetch(`/cart/${action}.js`, {
@@ -53,7 +52,7 @@ async function parseCampaignData() {
 
   try {
     // 🟦 Fetch via MAIN shared fetcher (NO duplicate API call)
-    const data = await getCampaignDataCached();
+    const data = await getCampaignData();
 
     const endTime = performance.now();   // ⏱️ END TIMER
     const duration = Math.round(endTime - startTime);

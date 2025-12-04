@@ -1,6 +1,6 @@
 <div id="optimaio-progress-container"></div>
 
-<style>
+{% comment %} <style>
 #optimaio-progress-container {
   padding: 10px 0 20px;
 }
@@ -59,7 +59,7 @@
   background: #000 !important;
   display: block !important;
 }
-</style>
+</style> {% endcomment %}
 
 <script>
 (() => {
@@ -77,25 +77,25 @@
   const start = performance.now(); // ⏱ START TIMER
 
   try {
-    if (typeof getCampaignDataCached !== "function") {
-      console.warn("⚠️ Progress Bar: getCampaignDataCached() is NOT available!");
+    if (typeof getCampaignData !== "function") {
+      console.warn("⚠️ Progress Bar: getCampaignData() is NOT available!");
       return null;
     }
 
-    // 🟦 Use global cached campaign fetcher
-    const data = await getCampaignDataCached();
+    const data = await getCampaignData();
 
-    const end = performance.now(); // ⏱ END TIMER
-    console.log(`⚡ Campaign (cached) fetched in ${Math.round(end - start)} ms`, data);
+    const end = performance.now();
+    console.log(`⚡ Progress Bar Campaign fetched in ${Math.round(end - start)} ms`, data);
 
     return data;
 
   } catch (err) {
     const end = performance.now();
-    console.warn(`⚠️ Campaign fetch failed after ${Math.round(end - start)} ms`, err);
+    console.warn(`⚠️ Progress Bar Campaign fetch failed after ${Math.round(end - start)} ms`, err);
     return null;
   }
 }
+
 
 
 
@@ -283,18 +283,18 @@ if (idx === -1) {
     /** ⭐ DYNAMIC MESSAGE FIX ENDS HERE ⭐ **/
   }
 
-  document.addEventListener("optimaio:cart:refresh", async () => {
-    const data = await getCampaignDataCached();
-    const config = extractSteps(data);
-    if (!config || !config.steps?.length) return;
+  document.addEventListener("optimaio:cart:updated", async (e) => {
+  const cart = e.detail;  // ✅ works
+  const data = await getCampaignData();  // uses shared campaign
+  const config = extractSteps(data);
+  updateProgress(cart, config);
+});
 
-    const cart = await fetch("/cart.js").then(r => r.json());
-    updateProgress(cart, config);
-  });
 
   (async function init() {
     const container = document.getElementById("optimaio-progress-container");
-    const data = await getCampaignDataCached();
+    const data = await getCampaignData();
+
     const config = extractSteps(data);
 
     if (!config || !config.steps?.length) {
@@ -304,7 +304,7 @@ if (idx === -1) {
 
     renderUI(container, config);
 
-    const cart = await fetch("/cart.js").then(r => r.json());
+    const cart = await window.OptimaioCartController.getCart();
     updateProgress(cart, config);
   })();
 })();

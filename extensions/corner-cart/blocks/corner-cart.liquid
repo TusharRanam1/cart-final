@@ -1,61 +1,259 @@
 <script>
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 </script>
- 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  console.log("🟦 Testing CSS extraction using FAKE JSON…");
+
+  // FAKE CAMPAIGN DATA (edit this for testing)
+  const fakeCampaignData = {
+    campaigns: [
+      {
+        id: "test_campaign_1",
+        status: "active",
+        campaignType: "tiered",
+        trackType: "quantity",
+        goals: [
+          {
+            id: "g1",
+            type: "free_shipping",
+            target: 1,
+            giftTitleBefore: ".optimaio-progress-fill {background:red !important; }"
+          },
+          {
+            id: "g2",
+            type: "order_discount",
+            target: 2,
+            giftTitleBefore: ".optimaio-milestone-label { color: green !important; }"
+          }
+        ]
+      }
+    ]
+  };
+
+  /* ---------------------------
+     CSS INJECTION LOGIC
+  ----------------------------*/
+  function injectCSS(cssString) {
+    let style = document.getElementById("optimaio-test-css");
+    
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "optimaio-test-css";
+      document.head.appendChild(style);
+    }
+
+    // Ensure CSS has !important where needed
+    cssString = cssString
+      .replace(/;(?![^{}]*})/g, " !important;")  
+      .trim();
+
+    style.textContent = cssString;
+  }
+
+  function testCSSFromFakeJSON(data) {
+    const active = data.campaigns?.find(c => c.status === "active");
+    if (!active) return console.warn("⚠ No active campaign in fake JSON");
+
+    let cssFound = [];
+
+    active.goals.forEach(goal => {
+      const css = goal.giftTitleBefore;
+
+      if (typeof css === "string" && css.includes("{") && css.includes("}")) {
+        cssFound.push(css);
+      }
+    });
+
+    if (!cssFound.length) {
+      console.warn("⚠ No CSS found in fake JSON");
+      return;
+    }
+
+    console.log("🎨 CSS found:", cssFound);
+
+    injectCSS(cssFound.join("\n"));
+
+    console.log("🎉 Fake JSON CSS applied successfully!");
+  }
+
+  // Run test
+  testCSSFromFakeJSON(fakeCampaignData);
+
+});
+</script>
 
 <script>
 /* ----------------------------------------------------
-   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE (1 fetch only)
+   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE
+   - Supports CACHE or FRESH mode
+   - Still guarantees: ONLY ONE fetch at a time
 ---------------------------------------------------- */
 
-window.__OPTIMIAO_CAMPAIGN_CACHE__ = {
-  data: null,
-  time: 0,
-  pending: null,
-  TTL: 0 // 5 sec or whatever you want
+window.__OPTIMIAO_FETCH_STATE__ = {
+  data: null,        // saved campaign data
+  pending: null,     // shared promise
+  lastFetch: 0,      // timestamp
+  TTL: 0             // 👈 CACHE TIME IN MS (0 = ALWAYS FRESH)
 };
 
-async function getCampaignDataCached() {
-  const cache = window.__OPTIMIAO_CAMPAIGN_CACHE__;
-  const now = Date.now();
+/* ====================================================
+   CONFIGURE CACHE TIME HERE
+   TTL = 0       → No cache (always fresh)
+   TTL = 5000    → Cache for 5 seconds
+   TTL = 60000   → Cache for 1 minute
+   TTL = 120000  → Cache for 2 minutes
+==================================================== */
+window.__OPTIMIAO_FETCH_STATE__.TTL = 60000;  // ← CHANGE THIS
 
-  // 🔄 Already fetching → return same promise
-  if (cache.pending) return cache.pending;
 
-  // 🟩 Fresh cache → return data
-  if (cache.data && now - cache.time < cache.TTL) {
-    return cache.data;
-  }
-
-  // 🔵 Start a SINGLE fetch for all scripts
+/* ----------------------------------------------------
+   MAIN FETCH FUNCTION (fresh request)
+---------------------------------------------------- */
+async function fetchCampaignFresh() {
+  const state = window.__OPTIMIAO_FETCH_STATE__;
   const start = performance.now();
 
-  cache.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
+  if (state.pending) return state.pending;
+
+  state.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
     cache: "no-store"
   })
     .then(res => res.json())
     .then(json => {
-      cache.data = json;
-      cache.time = Date.now();
+      state.data = json;
+      state.lastFetch = Date.now();
 
       console.log(
-        `%c⚡ Optimaio Main Fetch: ${Math.round(performance.now() - start)}ms`,
+        `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
         "color:#4caf50",
         json
       );
 
-      cache.pending = null;
+      state.pending = null;
       return json;
     })
     .catch(err => {
-      cache.pending = null;
-      console.warn("⚠️ Optimaio Main Fetch Failed", err);
+      console.warn("⚠️ Optimaio Fetch Failed", err);
+      state.pending = null;
       throw err;
     });
 
-  return cache.pending;
+  return state.pending;
+}
+
+
+/* ----------------------------------------------------
+   PUBLIC FUNCTION USED BY ALL SCRIPTS
+   (Reads Cache OR Fetches Fresh)
+---------------------------------------------------- */
+window.getCampaignData = async function() {
+  const state = window.__OPTIMIAO_FETCH_STATE__;
+  const now = Date.now();
+
+  // ✔ 1) If we have cached data + TTL not expired → return cache
+  if (state.TTL > 0 && state.data && now - state.lastFetch < state.TTL) {
+    console.log("%c📦 Optimaio Campaign (cached)", "color:#2196f3", state.data);
+    return state.data;
+  }
+
+  // ✔ 2) Otherwise → fetch fresh
+  return fetchCampaignFresh();
+};
+
+
+/* ----------------------------------------------------
+   OPTIONAL AUTO REFRESH TIMER
+   (Good if TTL is large)
+---------------------------------------------------- */
+const AUTO_REFRESH_TIMER = 0; // 0 = off
+
+if (AUTO_REFRESH_TIMER > 0) {
+  setInterval(() => {
+    console.log("%c🔄 Auto-refreshing campaign (timer)", "color: orange");
+    fetchCampaignFresh();
+  }, AUTO_REFRESH_TIMER);
 }
 </script>
+ 
+
+{% comment %} <script>
+/* ----------------------------------------------------
+   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE (1 fetch only)
+   Fresh data + Shared across all scripts
+---------------------------------------------------- */
+
+window.__OPTIMIAO_FETCH_STATE__ = {
+  data: null,       // latest campaign data
+  pending: null,    // shared promise
+  lastFetch: 0,     // timestamp
+  refreshGap: 0     // 0 = always fresh, no caching
+};
+
+/* ----------------------------------------------------
+   MAIN FETCH FUNCTION (always fresh)
+---------------------------------------------------- */
+async function fetchCampaignFresh() {
+  const state = window.__OPTIMIAO_FETCH_STATE__;
+  const start = performance.now();
+
+  // If fetch already in progress → WAIT for same promise
+  if (state.pending) return state.pending;
+
+  // Start new fetch
+  state.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
+    cache: "no-store"
+  })
+    .then(res => res.json())
+    .then(json => {
+      state.data = json;
+      state.lastFetch = Date.now();
+
+      console.log(
+        `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
+        "color:#4caf50",
+        json
+      );
+
+      state.pending = null;
+      return json;
+    })
+    .catch(err => {
+      console.warn("⚠️ Optimaio Fetch Failed", err);
+      state.pending = null;
+      throw err;
+    });
+
+  return state.pending;
+}
+
+/* ----------------------------------------------------
+   PUBLIC function used by ALL Scripts
+---------------------------------------------------- */
+window.getCampaignData = async function() {
+  const state = window.__OPTIMIAO_FETCH_STATE__;
+  const now = Date.now();
+
+  // No cache at all → ALWAYS fetch fresh
+  return fetchCampaignFresh();
+};
+
+/* ----------------------------------------------------
+   OPTIONAL: AUTO REFRESH TIMER (TURN ON IF YOU WANT)
+---------------------------------------------------- */
+// ❗ Set to 0 to disable | Example: 60_000 = refresh every 60 seconds
+const AUTO_REFRESH_TIMER = 0;
+
+if (AUTO_REFRESH_TIMER > 0) {
+  setInterval(() => {
+    console.log("%c🔄 Auto-refreshing campaign (timer)", "color: orange");
+    fetchCampaignFresh();
+  }, AUTO_REFRESH_TIMER);
+}
+
+</script> {% endcomment %}
+
 
 <script>
   window.__OPTIMAIO_CURRENCIES__ = {{ shop.metafields.optimaio_cart.currencies.value | json }};
@@ -111,9 +309,9 @@ async function getCampaignDataCached() {
   }; {% endcomment %}
 </script>
 
-<script src="{{ 'optimaio.js' | asset_url }}" defer></script>
+
  
- {% assign style = 'coolj' %}
+ {% assign style = 'darkhf' %}
 
 {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
 
@@ -135,7 +333,7 @@ async function getCampaignDataCached() {
 <div id="optimaio-cart-drawer" class="optimaio-cart-drawer" data-active-tab="cart">
   <!-- Header -->
   <div class="optimaio-cart-drawer__header">
-    <h2>My Cart</h2>
+    <h2 class="optimaio-cart-tile">My Cart</h2>
     <button type="button" class="optimaio-cart-drawer__close">×</button>
   </div>
  
@@ -216,27 +414,11 @@ async function getCampaignDataCached() {
 
 {% comment %} <script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> {% endcomment %}
 
-
+<script src="{{ 'optimaio.js' | asset_url }}" defer></script>
 <script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
 <script src="{{ 'bxgy.js' | asset_url }}" defer></script> 
+
 <style>
-  /* ✨ Placeholder shimmer for pending free gift */
-.optimaio-gift-placeholder {
-  opacity: 0.85;
-  position: relative;
-  overflow: hidden;
-}
-.optimaio-gift-placeholder::after {
-  content: "";
-  position: absolute;
-  top: 0; left: -150px;
-  width: 100px; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  animation: optimaio-shimmer 1.2s infinite;
-}
-@keyframes optimaio-shimmer {
-  100% { left: 150%; }
-}
 
 </style>
  

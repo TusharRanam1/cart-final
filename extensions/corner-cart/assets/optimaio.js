@@ -394,6 +394,12 @@ function formatShopMoney(amountInCents) {
   renderCart(e.detail);
 });
  
+// ✔ FIX: only re-render with latest cart, DO NOT refetch campaigns
+document.addEventListener("optimaio:cart:refresh", async () => {
+  const cart = await window.OptimaioCartController.getCart();
+  renderCart(cart);
+});
+
  
  
     /* ------------------------------

@@ -62,11 +62,17 @@
   top: 0;
   z-index: 5;
 }
-.optimaio-cart-drawer__header h2 {
+.optimaio-cart-tile {
   font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
   margin: 0;
-  font-weight: 600;
+  padding: 0;
+  line-height: 1.2;
+  font-family: inherit;
+  letter-spacing: 0; /* Prevent theme overrides */
 }
+
 .optimaio-cart-drawer__close {
   font-size: 20px;
   background: none;
@@ -90,32 +96,99 @@
 }
 
 /* ========== Alerts & Progress Bars ========== */
-.optimaio-cart-drawer__alert {
-  background: var(--alert-bg);
-  color: var(--alert-text);
-  padding: 8px;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 13px;
-  margin-bottom: 8px;
+/* =====================================================
+   OPTIMAIO – PROGRESS BAR (Theme-Adaptive)
+===================================================== */
+
+/* Container */
+#optimaio-progress-container {
+  padding: 10px 0 20px;
 }
 
-.optimaio-cart-drawer__progress {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  margin-bottom: 10px;
-}
-.optimaio-cart-drawer__progress .optimaio-step {
-  flex: 1;
+/* Top message text */
+.optimaio-progress-message {
   text-align: center;
-  border-bottom: 2px solid var(--progress-inactive);
-  padding-bottom: 3px;
-}
-.optimaio-cart-drawer__progress .done {
-  border-color: var(--progress-active);
+  font-size: 16px;
   font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-color);
 }
+
+/* Bar background */
+.optimaio-progress-bar {
+  height: 6px;
+  background: var(--progress-bar-bg, #00000010);
+  border-radius: 6px;
+  position: relative;
+  margin: 0 auto 28px;
+  width: 90%;
+}
+
+/* Fill bar (moves left → right) */
+.optimaio-progress-fill {
+  height: 100%;
+  background: var(--progress-active) ;
+  width: 0%;
+  border-radius: 6px;
+  transition: width .4s ease;
+}
+
+/* FORCE progress bar to animate correctly */
+.optimaio-progress-fill {
+
+  transition: width .4s ease !important;
+  display: block !important;
+}
+
+/* Allow JS to set dynamic width properly */
+/* .optimaio-progress-bar .optimaio-progress-fill {
+  width: var(--optimaio-fill-width, 0%) !important;
+} */
+
+
+/* Milestones container */
+.optimaio-progress-milestones {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
+
+/* Each milestone */
+.optimaio-milestone {
+  position: absolute;
+  transform: translate(-50%, 8px);
+  text-align: center;
+}
+
+/* SVG Icon */
+.optimaio-milestone-icon svg {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  background: var(--card-bg);
+  border-radius: 50%;
+  border: 2px solid var(--progress-active);
+  stroke: var(--progress-active);
+  fill: none;
+}
+
+/* Reached Goal */
+.optimaio-milestone.active svg {
+  background: var(--progress-active);
+  stroke: var(--progress-icon-active-stroke, #fff);
+  fill: var(--progress-icon-active-fill, #fff);
+}
+
+/* Label below icon */
+.optimaio-milestone-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-color);
+  line-height: normal;
+}
+
 
 /* ========== Cart Items ========== */
 .optimaio-cart-drawer__items {
@@ -208,6 +281,24 @@
   font-weight: 700;
   color: var(--text-color);
 }
+
+.optimaio-qty-btn {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.optimaio-cart-item__qty {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: 20px;
+  text-align: center;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
 
 /* ========== Discount Tag ========== */
 .optimaio-cart-item__discount {
@@ -374,4 +465,23 @@
     font-size: 13px;
     padding: 8px 14px;
   }
+}
+
+
+  /* ✨ Placeholder shimmer for pending free gift */
+.optimaio-gift-placeholder {
+  opacity: 0.85;
+  position: relative;
+  overflow: hidden;
+}
+.optimaio-gift-placeholder::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -150px;
+  width: 100px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: optimaio-shimmer 1.2s infinite;
+}
+@keyframes optimaio-shimmer {
+  100% { left: 150%; }
 }

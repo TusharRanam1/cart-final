@@ -60,7 +60,7 @@ async function parseCampaignData() {
 
   try {
     // 🟦 Use global cached function
-    const data = await getCampaignDataCached();
+   const data = await getCampaignData();
 
     const end = performance.now(); // ⏱ End timer
     const timeTaken = Math.round(end - start);
