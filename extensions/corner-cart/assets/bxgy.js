@@ -167,7 +167,11 @@ switch (bxgyMode) {
   ------------------------------------ */
   case "product": {
     const buyProductQty = cart.items
-      .filter(i => !i.properties?.isBXGYGift && buyVariantIds.includes(i.variant_id))
+      .filter(i =>
+  !i.properties?.isBXGYGift &&
+  !i.properties?.isFreeGift &&
+  buyVariantIds.includes(i.variant_id)
+)
       .reduce((a, i) => a + i.quantity, 0);
 
     console.log(`[🟠 product] Qty=${buyProductQty} / Need=${buyQty}`);
@@ -187,7 +191,11 @@ switch (bxgyMode) {
     }
 
     const buyCollectionQty = cart.items
-      .filter(i => !i.properties?.isBXGYGift && collectionProductIds.includes(i.product_id))
+      .filter(i =>
+  !i.properties?.isBXGYGift &&
+  !i.properties?.isFreeGift &&
+  collectionProductIds.includes(i.product_id)
+)
       .reduce((a, i) => a + i.quantity, 0);
 
     console.log(`[🟢 collection] Qty=${buyCollectionQty} / Need=${buyQty}`);
@@ -207,7 +215,11 @@ switch (bxgyMode) {
     }
 
     const spendAmount = cart.items
-      .filter(i => !i.properties?.isBXGYGift && collectionProductIds.includes(i.product_id))
+      .filter(i =>
+  !i.properties?.isBXGYGift &&
+  !i.properties?.isFreeGift &&
+  collectionProductIds.includes(i.product_id)
+)
       .reduce((total, i) => total + (i.price * i.quantity), 0);
 
     console.log(`[💰 spend_any_collection] Spend=${spendAmount/100} / Need=${goal.spendAmount}`);
@@ -220,7 +232,7 @@ switch (bxgyMode) {
   ------------------------------------ */
   case "all": {
     const allQty = cart.items
-      .filter(i => !i.properties?.isBXGYGift)
+      .filter(i => !i.properties?.isBXGYGift && !i.properties?.isFreeGift)
       .reduce((a, i) => a + i.quantity, 0);
 
     console.log(`[🔵 all] Qty=${allQty} / Need=${buyQty}`);

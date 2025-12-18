@@ -17,13 +17,12 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_discounts,read_products,write_cart_transforms,write_discounts,write_products,write_app_proxy"
+scopes = "read_discounts,read_products,write_app_proxy,write_cart_transforms,write_discounts,write_products"
 
 [auth]
 redirect_urls = [ "https://cart-final.onrender.com/api/auth" ]
 
 [app_proxy]
-url = "/optimaio-cart"
-prefix = "apps"
+url = "https://cart-final.onrender.com/optimaio-cart"
 subpath = "optimaio-cart"
-
+prefix = "apps"

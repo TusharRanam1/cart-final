@@ -216,6 +216,9 @@ function formatShopMoney(amountInCents) {
   function initDrawer() {
     const cornerCart = document.getElementById("optimaio-corner-cart");
     const drawer = document.getElementById("optimaio-cart-drawer");
+
+    
+
     if (!cornerCart || !drawer) return;
  
     const itemsContainer = drawer.querySelector(".optimaio-cart-drawer__items");

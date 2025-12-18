@@ -1,75 +1,89 @@
 <div id="optimaio-offers-section" class="optimaio-offers-section">
-  <h3>Exclusive Offers 🎉</h3>
-  <ul id="optimaio-offers-list" class="optimaio-offers-list">
-    <li>Loading offers...</li>
-  </ul>
+  <h3 class="optimaio-offers-title">Exclusive Offers 🎉</h3>
+
+  <div id="optimaio-offers-list" class="optimaio-offers-grid">
+    <div class="optimaio-offer-card">Loading offers...</div>
+  </div>
 </div>
 
 <script>
 (function(){
-  const renderOffers = () => {
-    const campaigns = window.OptimaioCampaigns || [];
-    const list = document.getElementById("optimaio-offers-list");
-    if (!list) return;
-    list.innerHTML = "";
 
-    if (!campaigns.length) {
-      list.innerHTML = "<li>No active offers available</li>";
-      return;
-    }
+  async function loadOffers() {
+    const wrapper = document.getElementById("optimaio-offers-list");
+    if (!wrapper) return;
 
-    campaigns
-      .filter(c => c.status === "active")
-      .forEach(c => {
-        const li = document.createElement("li");
-        li.className = "optimaio-offer-item";
+    wrapper.innerHTML = `<div class="optimaio-offer-card">Loading offers...</div>`;
 
-        let html = `<strong>${c.campaignName}</strong>`;
-        c.goals.forEach(g => {
-          switch (g.type) {
-            case "free_shipping":
-              html += `<p>🚚 Free shipping on ${g.target}+ items</p>`;
-              break;
-            case "order_discount":
-              html += `<p>💸 ${g.discountValue}% off on ${g.target}+ items</p>`;
-              break;
-            case "free_product":
-              html += `<p>🎁 Free ${g.giftQty || 1} product${(g.giftQty>1)?'s':''} on ${g.target}+ items</p>`;
-              if (g.products?.length) {
-                html += `<div class="offer-products">${g.products.map(p => `
-                  <div class="offer-product">
-                    <img src="${p.image?.url}" alt="${p.productTitle}">
-                    <span>${p.productTitle}</span>
-                  </div>`).join('')}</div>`;
-              }
-              break;
-            default:
-              if (g.discountType === "free_product" && g.getProducts?.length) {
-                const buy = g.buyProducts.map(p => p.productTitle).join(", ");
-                const get = g.getProducts.map(p => p.productTitle).join(", ");
-                html += `<p>🛍️ Buy ${g.buyQty} ${buy} get ${g.getQty} ${get} free</p>`;
-              }
-          }
-        });
+    let data = await window.getCampaignData();
+    const campaigns = Array.isArray(data) ? data : (data?.campaigns || []);
 
-        li.innerHTML = html;
-        list.appendChild(li);
+    wrapper.innerHTML = "";
+
+    const active = campaigns.filter(c => c.status === "active");
+
+    active.forEach(campaign => {
+
+      const contentObj = campaign.content || {};
+      let contentKeys = Object.keys(contentObj);
+      if (!contentKeys.length) return;
+
+      // Sort keys (1st goal, 2nd goal…)
+      contentKeys = contentKeys.sort((a, b) => parseInt(a) - parseInt(b));
+
+      contentKeys.forEach((key, i) => {
+        const content = contentObj[key];
+        const title = content?.offerTitle;
+        const subtitle = content?.offerSubtitle;
+        if (!title && !subtitle) return;
+
+        const goal = campaign.goals?.[i];
+
+        // ICONS
+        let icon = "";
+        if (goal?.type === "free_shipping") icon = "🚚";
+        else if (goal?.type === "order_discount") icon = "🏷️";
+        else if (goal?.type === "free_product") icon = "🎁";
+        else icon = "✨";
+
+        const card = document.createElement("div");
+        card.className = "optimaio-offer-card";
+
+        let html = `
+          <div class="optimaio-offer-left">
+            <span class="optimaio-offer-icon">${icon}</span>
+          </div>
+
+          <div class="optimaio-offer-right">
+            <h4 class="optimaio-offer-title">${title}</h4>
+            ${subtitle ? `<p class="optimaio-offer-subtitle">${subtitle}</p>` : ""}
+          </div>
+        `;
+
+        // Free product preview only for free-product goal
+        if (goal?.type === "free_product" && goal.products?.length) {
+          const p = goal.products[0];
+          html += `
+            <div class="optimaio-offer-products">
+              <div class="optimaio-offer-product">
+                <img src="${p.image?.url}" />
+                <span>${p.productTitle}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = html;
+        wrapper.appendChild(card);
       });
-  };
+    });
 
-  // Run once DOM ready
-  document.addEventListener("DOMContentLoaded", () => {
-    if (window.OptimaioCampaigns) renderOffers();
-    else document.addEventListener("optimaio:campaigns:ready", renderOffers);
-  });
+    if (!wrapper.children.length) {
+      wrapper.innerHTML = `<div class="optimaio-offer-card">No offers available</div>`;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", loadOffers);
+
 })();
 </script>
-
-<style>
-.optimaio-offers-list { list-style:none;padding:0;margin:0; }
-.optimaio-offer-item { background:#fafafa;margin:8px 0;padding:12px;border-radius:8px; }
-.offer-products { display:flex;gap:10px;margin-top:6px;flex-wrap:wrap; }
-.offer-product { text-align:center; }
-.offer-product img { width:60px;height:60px;border-radius:6px;object-fit:cover; }
-.offer-product span { display:block;font-size:12px;margin-top:4px; }
-</style>

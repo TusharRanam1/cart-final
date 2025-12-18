@@ -1,7 +1,8 @@
 <script>
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 </script>
-<script>
+
+{% comment %} <script>
 document.addEventListener("DOMContentLoaded", function() {
 
   console.log("🟦 Testing CSS extraction using FAKE JSON…");
@@ -82,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function() {
   testCSSFromFakeJSON(fakeCampaignData);
 
 });
-</script>
+</script> {% endcomment %}
 
 <script>
 /* ----------------------------------------------------
@@ -311,7 +312,7 @@ if (AUTO_REFRESH_TIMER > 0) {
 
 
  
- {% assign style = 'darkhf' %}
+ {% assign style = 'darkgdg' %}
 
 {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
 
@@ -331,18 +332,31 @@ if (AUTO_REFRESH_TIMER > 0) {
 </div>
  
 <div id="optimaio-cart-drawer" class="optimaio-cart-drawer" data-active-tab="cart">
+  
   <!-- Header -->
   <div class="optimaio-cart-drawer__header">
     <h2 class="optimaio-cart-tile">My Cart</h2>
     <button type="button" class="optimaio-cart-drawer__close">×</button>
   </div>
+
+  <div id="optimaio-countdown" class="optimaio-countdown">
+  <span class="optimaio-countdown-label">⏳ Offer ends in</span>
+  <span id="optimaio-countdown-time">
+    <span class="optimaio-time"><strong>00</strong>d</span>
+    <span class="optimaio-time"><strong>00</strong>h</span>
+    <span class="optimaio-time"><strong>00</strong>m</span>
+    <span class="optimaio-time"><strong>00</strong>s</span>
+  </span>
+</div>
+{% render 'optimaio-progress-bar' %}
  
   <!-- Middle Scrollable Body -->
   <div class="optimaio-cart-drawer__middle">
+    
  
     <!-- TAB: CART -->
     <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
-      {% render 'optimaio-progress-bar' %}
+      
 
       {% comment %} <!-- 🔒 Hidden template used by BXGY to render the instant gift card -->
 <template id="optimaio-free-gift-template">
@@ -410,17 +424,60 @@ if (AUTO_REFRESH_TIMER > 0) {
 </div>
  
 
+<script>
+(function () {
+  const container = document.getElementById("optimaio-countdown");
+  if (!container) return;
+
+  const boxes = container.querySelectorAll(".optimaio-time strong");
+  if (boxes.length !== 4) return;
+
+  // 🔒 STATIC END DATE: 31 DEC (local time)
+  const endTime = new Date(
+    new Date().getFullYear(),
+    11, // December
+    31,
+    23, 59, 59
+  ).getTime();
+
+  function updateCountdown() {
+    let diff = endTime - Date.now();
+
+    if (diff <= 0) {
+      container.style.display = "none";
+      return;
+    }
+
+    const days = Math.floor(diff / 86400000);
+    diff -= days * 86400000;
+
+    const hours = Math.floor(diff / 3600000);
+    diff -= hours * 3600000;
+
+    const minutes = Math.floor(diff / 60000);
+    diff -= minutes * 60000;
+
+    const seconds = Math.floor(diff / 1000);
+
+    boxes[0].textContent = String(days).padStart(2, "0");
+    boxes[1].textContent = String(hours).padStart(2, "0");
+    boxes[2].textContent = String(minutes).padStart(2, "0");
+    boxes[3].textContent = String(seconds).padStart(2, "0");
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+})();
+</script>
 
 
-{% comment %} <script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> {% endcomment %}
+<script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> 
 
 <script src="{{ 'optimaio.js' | asset_url }}" defer></script>
-<script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
-<script src="{{ 'bxgy.js' | asset_url }}" defer></script> 
+{% comment %} <script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
+<script src="{{ 'bxgy.js' | asset_url }}" defer></script>  {% endcomment %}
 
-<style>
 
-</style>
  
 {% comment %} <style>
  
@@ -490,6 +547,7 @@ if (AUTO_REFRESH_TIMER > 0) {
 @media (max-width:768px){#optimaio-corner-cart{bottom:15px;right:15px;font-size:13px;padding:8px 14px;}}
 </style> {% endcomment %}
  
+
 {% schema %}
 {
 "name": "Optimaio Corner Cart",
@@ -497,4 +555,3 @@ if (AUTO_REFRESH_TIMER > 0) {
 "settings": []
 }
 {% endschema %}
- 

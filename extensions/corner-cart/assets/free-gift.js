@@ -28,10 +28,10 @@
   // ----------------------------
   // 🛒 CART HELPERS
   // ----------------------------
-  async function getCart() {
-  const res = await fetch("/cart.js", { cache: "no-store" });
-  return await res.json();
+ async function getCart() {
+  return await window.OptimaioCartController.getCart();
 }
+
 
 
   async function cartChange(action, payload) {
@@ -200,16 +200,19 @@ async function parseCampaignData() {
       const cart = await getCart();
       const giftLines = cart.items.filter(i => i.properties?.isFreeGift === "true");
       const hasNonGiftProducts = cart.items.some(
-        i => !giftVariantIds.includes(i.variant_id)
-      );
+  i => !i.properties?.isFreeGift && !i.properties?.isBXGYGift
+);
+
 
       const subtotal =
         cart.items
-          .filter(i => !giftVariantIds.includes(i.variant_id))
+          .filter(i => !i.properties?.isFreeGift && !i.properties?.isBXGYGift)
+
           .reduce((a, i) => a + i.final_line_price, 0) / 100;
 
       const totalQty = cart.items
-        .filter(i => !giftVariantIds.includes(i.variant_id))
+        .filter(i => !i.properties?.isFreeGift && !i.properties?.isBXGYGift)
+
         .reduce((a, i) => a + i.quantity, 0);
 
       const trackType = campaign.trackType;

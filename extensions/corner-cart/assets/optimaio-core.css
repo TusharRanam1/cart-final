@@ -1,3 +1,38 @@
+#optimaio-cart-drawer {
+  background: url("https://cdn.shopify.com/s/files/1/0964/6404/4105/files/theme_cover_image.jpg?v=1764853056")
+    center / cover no-repeat;
+}
+
+.optimaio-countdown {
+  background: #fff3cd;
+  color: #7a4b00;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#optimaio-countdown-time {
+  display: flex;
+  gap: 6px;
+}
+
+.optimaio-time {
+  background: #fff;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.optimaio-time strong {
+  font-weight: 700;
+}
+
+
+
 /* =====================================================
    OPTIMAIO CART DRAWER - CORE LAYOUT & STRUCTURE
    (No colors — all theme-dependent values replaced by variables)
@@ -102,13 +137,17 @@
 
 /* Container */
 #optimaio-progress-container {
-  padding: 10px 0 20px;
+     display: block;
+    padding: 6px 0;
+    background-color: aquamarine;
+    border-top: 1px solid grey;
+    border-bottom: 1px solid grey;
 }
 
 /* Top message text */
 .optimaio-progress-message {
   text-align: center;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 10px;
   color: var(--text-color);
@@ -117,11 +156,11 @@
 /* Bar background */
 .optimaio-progress-bar {
   height: 6px;
-  background: var(--progress-bar-bg, #00000010);
+  background: var(--progress-inactive) ;
   border-radius: 6px;
   position: relative;
   margin: 0 auto 28px;
-  width: 90%;
+  width: 100%;
 }
 
 /* Fill bar (moves left → right) */
@@ -158,20 +197,21 @@
 /* Each milestone */
 .optimaio-milestone {
   position: absolute;
-  transform: translate(-50%, 8px);
+  transform: translate(-50%, 10px);
   text-align: center;
+  width: max-content;
 }
 
 /* SVG Icon */
 .optimaio-milestone-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 20px;
   padding: 1px;
   background: var(--card-bg);
   border-radius: 50%;
   border: 2px solid var(--progress-active);
   stroke: var(--progress-active);
-  fill: none;
+  fill: var(--progress-inactive);
 }
 
 /* Reached Goal */
@@ -181,15 +221,31 @@
   fill: var(--progress-icon-active-fill, #fff);
 }
 
-/* Label below icon */
-.optimaio-milestone-label {
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--text-color);
-  line-height: normal;
+#optimaio-cart-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99999;
 }
 
 
+
+/* Label below icon */
+.optimaio-milestone-label {
+  font-size: 11px;
+  /* font-weight: bold; */
+  color: var(--text-color);
+  line-height: normal;
+  margin-top: 4px;
+  word-wrap: break-word;
+    margin-top: -7px;
+}
+
+.optimaio-progress-bar-container {
+  padding: 0px 40px 0 20px;
+}
 /* ========== Cart Items ========== */
 .optimaio-cart-drawer__items {
   display: flex;
@@ -219,7 +275,7 @@
 }
 .optimaio-cart-item__image img {
   width: 70px;
-  height: 70px;
+  height: auto;
   border-radius: 8px;
   object-fit: cover;
 }
@@ -484,4 +540,99 @@
 }
 @keyframes optimaio-shimmer {
   100% { left: 150%; }
+}
+
+
+
+/* =====================================================
+   OPTIMAIO – OFFER CARDS (Theme-Adaptive)
+===================================================== */
+
+
+.optimaio-offers-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.optimaio-offers-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 3px 0 15px;
+  color: var(--text-color);
+}
+
+.optimaio-offer-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: 0.2s ease;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.optimaio-offer-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Left Icon */
+.optimaio-offer-left {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.optimaio-offer-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* Right Text Column */
+.optimaio-offer-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.optimaio-offer-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.optimaio-offer-subtitle {
+  font-size: 14px;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+/* Free product preview */
+.optimaio-offer-products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.optimaio-offer-product img {
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.optimaio-offer-product span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-muted);
 }
