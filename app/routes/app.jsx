@@ -24,10 +24,10 @@ export default function App() {
         </Link>
         <Link to="/app/create-campaign">Create campaign</Link>
         <Link to="/app/my-campaigns">My campaigns</Link>
-        <Link to="/app/cart-upsell">Cart Upsell</Link>
+        <Link to="/app/timer">Scarcity Timer</Link>
+        <Link to="/app/cart-appearance">Cart Appearance</Link>
         <Link to="/app/settings">Settings</Link>
         <Link to="/app/support">Support</Link>
-        <Link to="/app/health">App Health</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

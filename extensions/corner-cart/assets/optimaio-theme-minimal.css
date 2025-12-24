@@ -1,9 +1,9 @@
 /* =====================================================
-   OPTIMAIO CART DRAWER - THEME: MINIMAL
-   (Default soft pink & black theme — matches your current working version)
+   OPTIMAIO CART DRAWER - THEME: THEME1 (MINIMAL)
+   Default soft pink & black theme
 ===================================================== */
 
-:root {
+#optimaio-cart-drawer[data-optimaio-theme="theme1"] {
   /* ---------- Base Colors ---------- */
   --drawer-bg: #fff7f8;
   --card-bg: #ffffff;

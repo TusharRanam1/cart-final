@@ -41,95 +41,93 @@ export default function ActiveDatesPicker({ value, onChange }) {
     year: today.getFullYear(),
   });
 
-  const [selectedStart, setSelectedStart] = useState({ start: today, end: today });
+  const [selectedStart, setSelectedStart] = useState({
+    start: today,
+    end: today,
+  });
   const [selectedEnd, setSelectedEnd] = useState(null);
   const [hasEndDate, setHasEndDate] = useState(false);
 
   const [startPopoverActive, setStartPopoverActive] = useState(false);
   const [endPopoverActive, setEndPopoverActive] = useState(false);
-// Skip emitting until we've actually received data from parent
-const [hydrated, setHydrated] = useState(false);
+  // Skip emitting until we've actually received data from parent
+  const [hydrated, setHydrated] = useState(false);
 
-useEffect(() => {
-  if (!value) return;
-  const sd = parseStoredDate(value.start?.date);
-  const ed = parseStoredDate(value.end?.date);
-  const hasEnd = Boolean(value.hasEndDate);
+  useEffect(() => {
+    if (!value) return;
+    const sd = parseStoredDate(value.start?.date);
+    const ed = parseStoredDate(value.end?.date);
+    const hasEnd = Boolean(value.hasEndDate);
 
-  // --- Start ---
-  if (sd) {
-    setSelectedStart({ start: sd, end: sd });
-    setDate({ month: sd.getMonth(), year: sd.getFullYear() });
-  } else {
-    const now = new Date();
-    setSelectedStart({ start: now, end: now });
-  }
+    // --- Start ---
+    if (sd) {
+      setSelectedStart({ start: sd, end: sd });
+      setDate({ month: sd.getMonth(), year: sd.getFullYear() });
+    } else {
+      const now = new Date();
+      setSelectedStart({ start: now, end: now });
+    }
 
-  // --- End + checkbox ---
-  if (hasEnd && ed) {
-    setSelectedEnd({ start: ed, end: ed });
-    setHasEndDate(true);
-  } else {
-    setSelectedEnd(null);
-    setHasEndDate(false);
-  }
+    // --- End + checkbox ---
+    if (hasEnd && ed) {
+      setSelectedEnd({ start: ed, end: ed });
+      setHasEndDate(true);
+    } else {
+      setSelectedEnd(null);
+      setHasEndDate(false);
+    }
 
-  setHydrated(true); // ✅ mark ready
-}, [value]);
+    setHydrated(true); // ✅ mark ready
+  }, [value]);
 
-/** Hydrate and initialize from metafield (stable + deep sync) */
-const [initialized, setInitialized] = useState(false);
+  /** Hydrate and initialize from metafield (stable + deep sync) */
+  const [initialized, setInitialized] = useState(false);
 
-useEffect(() => {
-  if (!value) return; // wait until metafield data exists
-  const sd = parseStoredDate(value.start?.date);
-  const ed = parseStoredDate(value.end?.date);
-  const hasEnd = Boolean(value.hasEndDate);
+  useEffect(() => {
+    if (!value) return; // wait until metafield data exists
+    const sd = parseStoredDate(value.start?.date);
+    const ed = parseStoredDate(value.end?.date);
+    const hasEnd = Boolean(value.hasEndDate);
 
-  // Avoid re-initializing if we've already hydrated the same data
-  const currentStart = formatLocalYMD(selectedStart?.start);
-  const incomingStart = formatLocalYMD(sd);
-  const currentEnd = formatLocalYMD(selectedEnd?.start);
-  const incomingEnd = formatLocalYMD(ed);
+    // Avoid re-initializing if we've already hydrated the same data
+    const currentStart = formatLocalYMD(selectedStart?.start);
+    const incomingStart = formatLocalYMD(sd);
+    const currentEnd = formatLocalYMD(selectedEnd?.start);
+    const incomingEnd = formatLocalYMD(ed);
 
-  const isSameData =
-    currentStart === incomingStart &&
-    currentEnd === incomingEnd &&
-    hasEnd === hasEndDate;
+    const isSameData =
+      currentStart === incomingStart &&
+      currentEnd === incomingEnd &&
+      hasEnd === hasEndDate;
 
-  if (initialized && isSameData) return;
+    if (initialized && isSameData) return;
 
-  if (sd) {
-    setSelectedStart({ start: sd, end: sd });
-    setDate({ month: sd.getMonth(), year: sd.getFullYear() });
-  } else {
-    // No metafield date — init with today
-    const now = new Date();
-    setSelectedStart({ start: now, end: now });
-    onChange?.({
-      start: { date: formatLocalYMD(now) },
-      end: { date: null },
-      hasEndDate: false,
-    });
+    if (sd) {
+      setSelectedStart({ start: sd, end: sd });
+      setDate({ month: sd.getMonth(), year: sd.getFullYear() });
+    } else {
+      // No metafield date — init with today
+      const now = new Date();
+      setSelectedStart({ start: now, end: now });
+      onChange?.({
+        start: { date: formatLocalYMD(now) },
+        end: { date: null },
+        hasEndDate: false,
+      });
+      setInitialized(true);
+      return;
+    }
+
+    if (hasEnd && ed) {
+      setSelectedEnd({ start: ed, end: ed });
+      setHasEndDate(true);
+    } else {
+      setSelectedEnd(null);
+      setHasEndDate(false);
+    }
+
     setInitialized(true);
-    return;
-  }
-
-  if (hasEnd && ed) {
-    setSelectedEnd({ start: ed, end: ed });
-    setHasEndDate(true);
-  } else {
-    setSelectedEnd(null);
-    setHasEndDate(false);
-  }
-
-  setInitialized(true);
-}, [value]);
-
-
-
-
-
+  }, [value]);
 
   /** Emit to parent */
   const emitChange = useCallback(
@@ -140,10 +138,13 @@ useEffect(() => {
         hasEndDate: endFlag,
       });
     },
-    [onChange]
+    [onChange],
   );
 
-  const handleMonthChange = useCallback((m, y) => setDate({ month: m, year: y }), []);
+  const handleMonthChange = useCallback(
+    (m, y) => setDate({ month: m, year: y }),
+    [],
+  );
 
   /** START DATE */
   const handleStartDateChange = (val) => {
@@ -154,7 +155,11 @@ useEffect(() => {
       setSelectedEnd(null);
       setHasEndDate(false);
     }
-    emitChange(newStart, hasEndDate && selectedEnd?.start > newStart, selectedEnd?.start);
+    emitChange(
+      newStart,
+      hasEndDate && selectedEnd?.start > newStart,
+      selectedEnd?.start,
+    );
     setStartPopoverActive(false);
   };
 
@@ -184,15 +189,14 @@ useEffect(() => {
     }
   };
 
-// ⛔ Disable the start date itself — user must pick at least the next day
-const disableEndDatesBefore = selectedStart?.start
-  ? new Date(
-      selectedStart.start.getFullYear(),
-      selectedStart.start.getMonth(),
-      selectedStart.start.getDate() + 1
-    )
-  : new Date();
-
+  // ⛔ Disable the start date itself — user must pick at least the next day
+  const disableEndDatesBefore = selectedStart?.start
+    ? new Date(
+        selectedStart.start.getFullYear(),
+        selectedStart.start.getMonth(),
+        selectedStart.start.getDate() + 1,
+      )
+    : new Date();
 
   return (
     <>
@@ -208,7 +212,10 @@ const disableEndDatesBefore = selectedStart?.start
               <Popover
                 active={startPopoverActive}
                 activator={
-                  <div onClick={() => setStartPopoverActive(true)} style={{ cursor: "pointer" }}>
+                  <div
+                    onClick={() => setStartPopoverActive(true)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <TextField
                       label="Start date"
                       prefix={<Icon source={CalendarIcon} tone="base" />}
@@ -256,7 +263,10 @@ const disableEndDatesBefore = selectedStart?.start
                   <Popover
                     active={endPopoverActive}
                     activator={
-                      <div onClick={() => setEndPopoverActive(true)} style={{ cursor: "pointer" }}>
+                      <div
+                        onClick={() => setEndPopoverActive(true)}
+                        style={{ cursor: "pointer" }}
+                      >
                         <TextField
                           label="End date"
                           prefix={<Icon source={CalendarIcon} tone="base" />}

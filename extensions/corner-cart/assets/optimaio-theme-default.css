@@ -1,0 +1,40 @@
+/* =====================================================
+   OPTIMAIO CART DRAWER – DEFAULT THEME (Pink Blush)
+   Applied when NO theme is selected
+===================================================== */
+
+:root {
+  /* ---------- Base Colors ---------- */
+  --drawer-bg: #fff5f7;            /* soft blush pink */
+  --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  --summary-bg: #ffffff;
+  --footer-bg: #ffffff;
+
+  --border-color: #f2d6dc;
+  --scrollbar-thumb: #e6bfc8;
+
+  /* ---------- Text Colors ---------- */
+  --text-color: #2a1d23;           /* deep rose-black */
+  --text-muted: #7a5a65;
+
+  /* ---------- Buttons ---------- */
+  --btn-bg: #e75480;               /* rose pink */
+  --btn-color: #ffffff;
+
+  /* ---------- Accents ---------- */
+  --accent-color: #f28ab2;         /* soft highlight pink */
+
+  /* ---------- Alerts / Progress ---------- */
+  --alert-bg: #ffe3ea;
+  --alert-text: #b83260;
+  --progress-active: #e75480;
+  --progress-inactive: #f1c6d2;
+
+  /* ---------- Discounts ---------- */
+  --discount-bg: #ffe3ea;
+  --discount-text: #b83260;
+
+  /* ---------- Spinner ---------- */
+  --spinner-color: #e75480;
+}

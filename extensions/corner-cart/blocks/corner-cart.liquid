@@ -2,6 +2,17 @@
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
 </script>
 
+<script>
+  window.__OPTIMAIO_CART__ = {
+    settings: {{ shop.metafields.optimaio_cart.cart_settings.value | json }},
+    timer: {{ shop.metafields.optimaio_cart.cart_timer_settings.value | json }}
+  };
+
+  console.log("🧾 Optimaio Cart Metafields:", window.__OPTIMAIO_CART__);
+</script>
+
+
+
 {% comment %} <script>
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -92,6 +103,8 @@ document.addEventListener("DOMContentLoaded", function() {
    - Still guarantees: ONLY ONE fetch at a time
 ---------------------------------------------------- */
 
+const OPTIMIAO_SESSION_CACHE_KEY = "__OPTIMIAO_CAMPAIGN_CACHE__";
+
 window.__OPTIMIAO_FETCH_STATE__ = {
   data: null,        // saved campaign data
   pending: null,     // shared promise
@@ -101,12 +114,41 @@ window.__OPTIMIAO_FETCH_STATE__ = {
 
 /* ====================================================
    CONFIGURE CACHE TIME HERE
-   TTL = 0       → No cache (always fresh)
-   TTL = 5000    → Cache for 5 seconds
-   TTL = 60000   → Cache for 1 minute
-   TTL = 120000  → Cache for 2 minutes
 ==================================================== */
-window.__OPTIMIAO_FETCH_STATE__.TTL = 60000;  // ← CHANGE THIS
+window.__OPTIMIAO_FETCH_STATE__.TTL = 60000; // 1 minute
+
+
+/* ----------------------------------------------------
+   RESTORE CACHE FROM SESSION (on reload)
+---------------------------------------------------- */
+(function restoreCampaignCacheFromSession() {
+  try {
+    const raw = sessionStorage.getItem(OPTIMIAO_SESSION_CACHE_KEY);
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+
+    if (
+      parsed.data &&
+      parsed.timestamp &&
+      now - parsed.timestamp < window.__OPTIMIAO_FETCH_STATE__.TTL
+    ) {
+      window.__OPTIMIAO_FETCH_STATE__.data = parsed.data;
+      window.__OPTIMIAO_FETCH_STATE__.lastFetch = parsed.timestamp;
+
+      console.log(
+        "%c📦 Optimaio Campaign restored from session cache",
+        "color:#2196f3",
+        parsed.data
+      );
+    } else {
+      sessionStorage.removeItem(OPTIMIAO_SESSION_CACHE_KEY);
+    }
+  } catch (e) {
+    sessionStorage.removeItem(OPTIMIAO_SESSION_CACHE_KEY);
+  }
+})();
 
 
 /* ----------------------------------------------------
@@ -125,6 +167,17 @@ async function fetchCampaignFresh() {
     .then(json => {
       state.data = json;
       state.lastFetch = Date.now();
+
+      // 💾 Persist to session cache
+      try {
+        sessionStorage.setItem(
+          OPTIMIAO_SESSION_CACHE_KEY,
+          JSON.stringify({
+            data: json,
+            timestamp: state.lastFetch
+          })
+        );
+      } catch (e) {}
 
       console.log(
         `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
@@ -147,26 +200,24 @@ async function fetchCampaignFresh() {
 
 /* ----------------------------------------------------
    PUBLIC FUNCTION USED BY ALL SCRIPTS
-   (Reads Cache OR Fetches Fresh)
 ---------------------------------------------------- */
 window.getCampaignData = async function() {
   const state = window.__OPTIMIAO_FETCH_STATE__;
   const now = Date.now();
 
-  // ✔ 1) If we have cached data + TTL not expired → return cache
+  // ✔ Cached (memory / session) hit
   if (state.TTL > 0 && state.data && now - state.lastFetch < state.TTL) {
     console.log("%c📦 Optimaio Campaign (cached)", "color:#2196f3", state.data);
     return state.data;
   }
 
-  // ✔ 2) Otherwise → fetch fresh
+  // ✔ Fetch fresh
   return fetchCampaignFresh();
 };
 
 
 /* ----------------------------------------------------
    OPTIONAL AUTO REFRESH TIMER
-   (Good if TTL is large)
 ---------------------------------------------------- */
 const AUTO_REFRESH_TIMER = 0; // 0 = off
 
@@ -176,7 +227,15 @@ if (AUTO_REFRESH_TIMER > 0) {
     fetchCampaignFresh();
   }, AUTO_REFRESH_TIMER);
 }
+
+
+/* ----------------------------------------------------
+   🚀 PREFETCH IMMEDIATELY (warm cache early)
+---------------------------------------------------- */
+window.__OPTIMIAO_PREFETCH__ = fetchCampaignFresh().catch(() => null);
+
 </script>
+
  
 
 {% comment %} <script>
@@ -310,20 +369,127 @@ if (AUTO_REFRESH_TIMER > 0) {
   }; {% endcomment %}
 </script>
 
+<script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> 
 
+<script src="{{ 'optimaio.js' | asset_url }}" defer></script>
  
- {% assign style = 'darkgdg' %}
+ {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme-minimal.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme-cool.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme-dark.css' | asset_url | stylesheet_tag }}
 
-{{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
+<script>
+  (function () {
+    function applyOptimaioTheme() {
+      const settings = window.__OPTIMAIO_CART__?.settings || {};
+      const theme = settings.theme || "theme1";
+      const bannerStyle = settings.bannerStyle || {};
+  
+      const roots = [
+        document.getElementById("optimaio-cart-drawer")
+      ].filter(Boolean);
+  
+      if (!roots.length) return;
+  
+      /* ----------------------------
+         1️⃣ Apply theme ONLY to cart
+      ---------------------------- */
+      roots.forEach(root => {
+        root.setAttribute("data-optimaio-theme", theme);
+      });
+  
+      /* ----------------------------
+         2️⃣ Apply banner style
+         Priority: image → gradient → solid
+      ---------------------------- */
+      roots.forEach(root => {
+        // reset first
+        root.style.background = "";
+        root.style.backgroundImage = "";
+  
+        if (bannerStyle.bannerType === "image" && bannerStyle.imageUrl) {
+          root.style.backgroundImage = `url(${bannerStyle.imageUrl})`;
+          root.style.backgroundSize = "cover";
+          root.style.backgroundPosition = "center";
+          root.style.backgroundRepeat = "no-repeat";
+  
+        } else if (
+          bannerStyle.bannerType === "gradient" &&
+          bannerStyle.gradientStart &&
+          bannerStyle.gradientEnd
+        ) {
+          root.style.background = `linear-gradient(135deg, ${bannerStyle.gradientStart}, ${bannerStyle.gradientEnd})`;
+  
+        } else if (
+          bannerStyle.bannerType === "solid" &&
+          bannerStyle.solidColor
+        ) {
+          root.style.background = bannerStyle.solidColor;
+        }
+      });
+{% comment %}   
+      /* ----------------------------
+         3️⃣ Apply color variables
+      ---------------------------- */
+      const colors = settings.colors || {};
+      const variableMap = {
+        buttonColor: "--btn-bg",
+        primaryColor: "--accent-color",
+        secondaryColor: "--header-bg",
+        progressStart: "--progress-active",
+        progressEnd: "--progress-inactive"
+      };
+  
+      roots.forEach(root => {
+        Object.entries(variableMap).forEach(([key, cssVar]) => {
+          if (colors[key]) {
+            root.style.setProperty(cssVar, colors[key]);
+          }
+        });
+      });
+   {% endcomment %}
+      /* ----------------------------
+         4️⃣ Custom CSS (TOP priority)
+      ---------------------------- */
+      if (settings.customCSS?.trim()) {
+        let style = document.getElementById("optimaio-custom-css");
+        if (!style) {
+          style = document.createElement("style");
+          style.id = "optimaio-custom-css";
+          document.head.appendChild(style);
+        }
+        style.textContent = settings.customCSS;
+      }
+    }
+  
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", applyOptimaioTheme);
+    } else {
+      applyOptimaioTheme();
+    }
+  })();
+  </script>
+  
 
-{% case style %}
-  {% when 'cool' %}
-    {{ 'optimaio-theme-cool.css' | asset_url | stylesheet_tag }}
-    {% when 'dark' %}
-    {{ 'optimaio-theme-dark.css' | asset_url | stylesheet_tag }}
-  {% else %}
-    {{ 'optimaio-theme-minimal.css' | asset_url | stylesheet_tag }}
-{% endcase %}
+
+<script>
+(function () {
+  const settings = window.__OPTIMAIO_CART__?.settings || {};
+  const zIndex = settings.zIndex;
+
+  if (!zIndex || zIndex === "auto") return;
+
+  const z = Number(zIndex);
+  if (isNaN(z)) return;
+
+  const drawer = document.getElementById("optimaio-cart-drawer");
+  const corner = document.getElementById("optimaio-corner-cart");
+
+  if (drawer) drawer.style.setProperty("--optimaio-z-index", z);
+  if (corner) corner.style.setProperty("--optimaio-z-index", z);
+})();
+</script>
+
 
  
 <!-- Optimaio Universal Responsive Cart Drawer -->
@@ -338,6 +504,7 @@ if (AUTO_REFRESH_TIMER > 0) {
     <h2 class="optimaio-cart-tile">My Cart</h2>
     <button type="button" class="optimaio-cart-drawer__close">×</button>
   </div>
+  
 
   <div id="optimaio-countdown" class="optimaio-countdown">
   <span class="optimaio-countdown-label">⏳ Offer ends in</span>
@@ -425,55 +592,129 @@ if (AUTO_REFRESH_TIMER > 0) {
  
 
 <script>
-(function () {
-  const container = document.getElementById("optimaio-countdown");
-  if (!container) return;
-
-  const boxes = container.querySelectorAll(".optimaio-time strong");
-  if (boxes.length !== 4) return;
-
-  // 🔒 STATIC END DATE: 31 DEC (local time)
-  const endTime = new Date(
-    new Date().getFullYear(),
-    11, // December
-    31,
-    23, 59, 59
-  ).getTime();
-
-  function updateCountdown() {
-    let diff = endTime - Date.now();
-
-    if (diff <= 0) {
-      container.style.display = "none";
-      return;
+  (function () {
+    const data = window.__OPTIMAIO_CART__ || {};
+    const timer = data.timer;
+  
+    if (!timer || timer.status !== "active") return;
+  
+    const container = document.getElementById("optimaio-countdown");
+    if (!container) return;
+  
+    const boxes = container.querySelectorAll(".optimaio-time strong");
+    if (boxes.length !== 4) return;
+  
+    const STORAGE_KEY = "optimaio_timer_start";
+  
+    /* ----------------------------
+       Helpers
+    ---------------------------- */
+    function parseDate(date, time) {
+      return new Date(`${date} ${time || "12:00 AM"}`).getTime();
     }
+  
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+  
+    /* ----------------------------
+       START DATE GUARD (optional)
+    ---------------------------- */
+    if (timer.activeDates?.start?.date) {
+      const start = parseDate(
+        timer.activeDates.start.date,
+        timer.activeDates.start.time
+      );
+      if (Date.now() < start) {
+        container.style.display = "none";
+        return;
+      }
+    }
+  
+    /* ----------------------------
+       DETERMINE END TIME
+    ---------------------------- */
+    let endTime;
+  
+    /* 🔁 MODE: DURATION (cart-based) */
+    if (timer.timerConfig.timerMode === "duration") {
+      let startTime = localStorage.getItem(STORAGE_KEY);
+  
+      // ⏱ First product added → start timer
+      if (!startTime) {
+        startTime = Date.now();
+        localStorage.setItem(STORAGE_KEY, startTime);
+      }
+  
+      const d = timer.timerConfig.duration;
+      endTime =
+        Number(startTime) +
+        (+d.hours * 3600000) +
+        (+d.minutes * 60000) +
+        (+d.seconds * 1000);
+    }
+  
+    /* 📅 MODE: SPECIFIC (fixed end time) */
+    if (
+      timer.timerConfig.timerMode === "specific" &&
+      timer.timerConfig.activeDates?.end?.date
+    ) {
+      endTime = parseDate(
+        timer.timerConfig.activeDates.end.date,
+        timer.timerConfig.activeDates.end.time
+      );
+    }
+  
+    if (!endTime) return;
+  
+    /* ----------------------------
+       COUNTDOWN LOOP
+    ---------------------------- */
+    function updateCountdown() {
+      let diff = endTime - Date.now();
+  
+      if (diff <= 0) {
+        clearInterval(interval);
+        localStorage.removeItem(STORAGE_KEY);
+  
+        if (timer.expiredMessage) {
+          container.textContent = timer.expiredMessage;
+        } else {
+          container.style.display = "none";
+        }
+  
+        if (timer.afterAction === "refresh") {
+          setTimeout(() => location.reload(), 800);
+        }
+        return;
+      }
+  
+      const days = Math.floor(diff / 86400000);
+      diff -= days * 86400000;
+  
+      const hours = Math.floor(diff / 3600000);
+      diff -= hours * 3600000;
+  
+      const minutes = Math.floor(diff / 60000);
+      diff -= minutes * 60000;
+  
+      const seconds = Math.floor(diff / 1000);
+  
+      boxes[0].textContent = pad(days);
+      boxes[1].textContent = pad(hours);
+      boxes[2].textContent = pad(minutes);
+      boxes[3].textContent = pad(seconds);
+    }
+  
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+  })();
+  </script>
+  
+  
 
-    const days = Math.floor(diff / 86400000);
-    diff -= days * 86400000;
-
-    const hours = Math.floor(diff / 3600000);
-    diff -= hours * 3600000;
-
-    const minutes = Math.floor(diff / 60000);
-    diff -= minutes * 60000;
-
-    const seconds = Math.floor(diff / 1000);
-
-    boxes[0].textContent = String(days).padStart(2, "0");
-    boxes[1].textContent = String(hours).padStart(2, "0");
-    boxes[2].textContent = String(minutes).padStart(2, "0");
-    boxes[3].textContent = String(seconds).padStart(2, "0");
-  }
-
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
-})();
-</script>
 
 
-<script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> 
-
-<script src="{{ 'optimaio.js' | asset_url }}" defer></script>
 {% comment %} <script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
 <script src="{{ 'bxgy.js' | asset_url }}" defer></script>  {% endcomment %}
 

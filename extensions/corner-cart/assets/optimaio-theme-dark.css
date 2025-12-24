@@ -1,17 +1,12 @@
 /* =====================================================
-   OPTIMAIO CART DRAWER - THEME: DARK
-   (Elegant dark mode theme with pink-red accents)
+   OPTIMAIO CART DRAWER - THEME: THEME3 (DARK)
+   Elegant dark mode theme with pink-red accents
 ===================================================== */
 
-/* =====================================================
-   OPTIMAIO CART DRAWER - THEME: DARK (Updated)
-   Improved contrast & readability
-===================================================== */
-
-:root {
+#optimaio-cart-drawer[data-optimaio-theme="theme3"] {
   /* ---------- Base Colors ---------- */
   --drawer-bg: #0e0e0e;          /* darker background for overall drawer */
-  --card-bg: #1c1c1e;            /* slightly lighter card for contrast */
+  --card-bg: #505050;            /* slightly lighter card for contrast */
   --header-bg: #1c1c1e;
   --summary-bg: #1c1c1e;
   --footer-bg: #1c1c1e;
@@ -28,8 +23,7 @@
   --btn-color: #ffffff;
 
   /* ---------- Accents ---------- */
-  --accent-color: #ff7676;        /* soft pink-red*
-
+  --accent-color: #ff7676;        /* soft pink-red */
 
   /* ---------- Alerts / Progress ---------- */
   --alert-bg: #2a1313;

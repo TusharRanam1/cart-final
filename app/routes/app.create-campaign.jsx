@@ -15,6 +15,8 @@ import {
 import { ArrowLeftIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { useState, useCallback } from "react";
+import { useNavigate } from "@remix-run/react";
+
 
 // Loader: makes sure the request is authenticated
 export const loader = async ({ request }) => {
@@ -23,6 +25,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function AppIndexPage() {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState(0);
   const [toastActive, setToastActive] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -212,7 +215,6 @@ export default function AppIndexPage() {
                     <Button
   primary
   onClick={async () => {
-    // ✅ Choose API endpoint based on selected campaign
     const endpoint =
       selectedCampaign === "bxgy"
         ? "/api/create-bxgy-discount"
@@ -223,9 +225,18 @@ export default function AppIndexPage() {
       const data = await res.json();
 
       if (data.ok) {
+        // Show toast
         setToastMessage(
           `✅ Created: ${data.campaign.campaignName} (status: ${data.campaign.status})`
         );
+        setToastActive(true);
+
+        // ⏳ Wait shortly so user can see toast (optional)
+        setTimeout(() => {
+          navigate("/app/my-campaigns");
+        }, 800);
+
+        return;
       } else {
         setToastMessage("❌ Error creating campaign");
       }

@@ -8,6 +8,12 @@
   if (window.__OptimaioProMilestonesInit) return;
   window.__OptimaioProMilestonesInit = true;
 
+  // 🔥 Warm campaign cache early (safe, deduped)
+if (typeof getCampaignData === "function") {
+  getCampaignData().catch(() => null);
+}
+
+
   window.__OptimaioDrawerOpen = false;
 function isDrawerOpen() {
   const drawer = document.querySelector(".optimaio-cart-drawer");
@@ -20,8 +26,21 @@ function isDrawerOpen() {
 window.__OptimaioAchievedMilestones = window.__OptimaioAchievedMilestones || new Set();
 
 
-  {% comment %} let cache = null, cacheTime = 0;
-  const CACHE_TIME = 120000; {% endcomment %}
+  // UI element cache (performance only)
+const uiCache = {
+  fill: null,
+  msg: null,
+  milestones: null,
+  container: null
+};
+
+function cacheUI() {
+  uiCache.fill = document.querySelector(".optimaio-progress-fill");
+  uiCache.msg = document.querySelector(".optimaio-progress-message");
+  uiCache.milestones = document.querySelectorAll(".optimaio-milestone");
+  uiCache.container = document.getElementById("optimaio-progress-container");
+}
+
 
   function fillTemplate(str, vars) {
     return str.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
@@ -54,6 +73,7 @@ window.__OptimaioAchievedMilestones = window.__OptimaioAchievedMilestones || new
 
 
   function extractSteps(data) {
+    if (!data?.campaigns) return null;
     
   // 1️⃣ Filter ONLY tiered / cart-goal campaigns (NOT bxgy)
   const tieredCampaigns = data.campaigns
@@ -134,6 +154,8 @@ window.__OptimaioAchievedMilestones = window.__OptimaioAchievedMilestones || new
   m.style.left = pct + "%";
 });
 
+cacheUI();
+
   }
 
       function isGiftItem(item) {
@@ -186,16 +208,16 @@ function fireConfetti() {
 
 
   async function updateProgress(cart, config) {
+    if (!isDrawerOpen()) return;
     if (!config || !config.steps?.length) return;
 
-    const fill = document.querySelector(".optimaio-progress-fill");
-    const msg = document.querySelector(".optimaio-progress-message");
-    const milestones = document.querySelectorAll(".optimaio-milestone");
+    const { fill, msg, milestones, container } = uiCache;
+
 
     if (!fill || !msg || milestones.length === 0) return;
 
     // Hide progress bar if cart is empty
-const container = document.getElementById("optimaio-progress-container");
+{% comment %} const container = document.getElementById("optimaio-progress-container"); {% endcomment %}
 
 if (cart.items.length === 0) {
   container.style.display = "none";

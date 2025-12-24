@@ -17,12 +17,18 @@
   ----------------------------------------------------------- */
   window.__isFreeGiftRunning = false;
   window.__isBXGYRunning = false;
+  window.__optimaioPopupOpen = false;
 
   let debounceTimer = null;
 
-  window.__optimaioPopupOpen = false;
 
-  
+
+  /* -----------------------------------------------------------
+        🔥 EARLY CAMPAIGN PREFETCH (SAFE)
+        - Deduped by pending
+        - Uses session/memory cache
+  ----------------------------------------------------------- */
+  getCampaignData().catch(() => null);
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const WAIT =
@@ -60,14 +66,21 @@
 
   /* -----------------------------------------------------------
         SHARED CAMPAIGN FETCHER
-        (Uses your cached getCampaignData)
   ----------------------------------------------------------- */
   async function getCampaign() {
     const start = performance.now();
     try {
+      if (!navigator.onLine && window.__OPTIMIAO_FETCH_STATE__?.data) {
+        return window.__OPTIMIAO_FETCH_STATE__.data;
+      }
+
       const data = await getCampaignData();
+      const duration = Math.round(performance.now() - start);
+
       console.log(
-        `⚡ Campaign fetched in ${Math.round(performance.now() - start)}ms`,
+        duration < 20
+          ? "⚡ Campaign loaded from cache"
+          : `⚡ Campaign fetched in ${duration}ms`,
         data
       );
       return data;
@@ -482,32 +495,36 @@ if (condition) {
       await runFreeGiftEngine();
       await runBxgyEngine();
       document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
-    }, 220);
+    }, 150);
   }
 
-  /* -----------------------------------------------------------
-        GLOBAL CART EVENT HOOKS
-        (ONE SET ONLY — avoids double triggers)
+   /* -----------------------------------------------------------
+        GLOBAL CART EVENT HOOKS (GUARDED)
   ----------------------------------------------------------- */
-  const originalFetch = window.fetch;
-  window.fetch = async (...args) => {
-    const res = await originalFetch(...args);
-    const url = typeof args[0] === "string" ? args[0] : args[0]?.url;
+  if (!window.__OptimaioFetchWrapped) {
+    window.__OptimaioFetchWrapped = true;
 
-    if (/\/cart\/(add|change|update|clear)(\.js)?/.test(url))
-      runGiftEngine();
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      const url = typeof args[0] === "string" ? args[0] : args[0]?.url;
 
-    return res;
-  };
-
-  const originalOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-    this.addEventListener("load", () => {
       if (/\/cart\/(add|change|update|clear)(\.js)?/.test(url))
         runGiftEngine();
-    });
-    return originalOpen.call(this, method, url, ...rest);
-  };
+
+      return res;
+    };
+
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+      this.addEventListener("load", () => {
+        if (/\/cart\/(add|change|update|clear)(\.js)?/.test(url))
+          runGiftEngine();
+      });
+      return originalOpen.call(this, method, url, ...rest);
+    };
+  }
+
 
   document.addEventListener("submit", e => {
     const form = e.target;
@@ -519,5 +536,5 @@ if (condition) {
         INITIAL RUN
   ----------------------------------------------------------- */
   window.addEventListener("DOMContentLoaded", () => getCart());
-  setTimeout(runGiftEngine, 800);
+  setTimeout(runGiftEngine, 50);
 })();

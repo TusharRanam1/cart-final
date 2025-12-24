@@ -1,6 +1,34 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
+function getDefaultActiveDates() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+
+  return {
+    start: { date: `${y}-${m}-${d}` },
+    end: { date: null },
+    hasEndDate: false,
+  };
+}
+
+function getDefaultBxgyGoal() {
+  return {
+    id: `BXGY_${Date.now()}`,
+    bxgyMode: "product",     // 👈 default
+    buyQty: 1,               // 👈 default
+    buyProducts: [],         // 👈 empty on creation
+    buyCollections: [],
+    getQty: 1,               // 👈 default
+    getProducts: [],         // 👈 empty on creation
+    discountType: "free_product",
+    discountValue: 0,        // Or 10 if you want — tell me
+  };
+}
+
+
 /* ------------------ Helper: Save metafield ------------------ */
 async function setMetafield(admin, shopId, key, valueObj) {
   const mutation = `
@@ -171,10 +199,16 @@ export const action = async ({ request }) => {
   // Step 4: Create new BXGY campaign
   const nextNumber = getNextBxgyNumber(campaigns);
   const newCampaign = {
-    id: generateId(),
-    campaignName: `Buy X Get Y ${nextNumber}`,
-    status: "draft",
-    campaignType: "bxgy",
+      id: generateId(),
+  campaignName: `Buy X Get Y ${nextNumber}`,
+  status: "draft",                     // your example uses active
+  trackType: "cart",
+  campaignType: "bxgy",
+  goals: [getDefaultBxgyGoal()],        // 👈 adds default goal
+  activeDates: getDefaultActiveDates(), // 👈 adds default dates
+  content: {},
+  tzOffsetMinutes: new Date().getTimezoneOffset() * -1, // matches your example
+  priority: campaigns.length + 1,  
   };
   campaigns.push(newCampaign);
 
