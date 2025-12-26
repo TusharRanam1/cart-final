@@ -90,6 +90,23 @@
     }
   }
 
+
+  function createGiftPlaceholders(products, maxQty = 1) {
+    window.__expectedFreeGifts = window.__expectedFreeGifts || {};
+  
+    products.slice(0, maxQty).forEach(p => {
+      const vid = Number(p.id.split("/").pop());
+  
+      window.__expectedFreeGifts[vid] = {
+        title: p.productTitle || p.title || "Free Gift",
+        image: p.image?.url || ""
+      };
+    });
+  
+    // 🔄 Re-render drawer immediately
+    document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
+  }
+  
   /* -----------------------------------------------------------
         FREE GIFT POPUP (Created once using requestIdleCallback)
   ----------------------------------------------------------- */
@@ -184,7 +201,18 @@
     popup.style.display = "none";
     window.__optimaioPopupOpen = false;
 
-    for (const vid of selected) await addFreeGift(vid);
+    // for (const vid of selected) await addFreeGift(vid);
+
+    const selectedProducts = products.filter(p =>
+      selected.has(Number(p.id.split("/").pop()))
+    );
+    
+    createGiftPlaceholders(selectedProducts, maxQty);
+    
+    for (const vid of selected) {
+      await addFreeGift(vid);
+    }
+    
 
     runFreeGiftEngine();
   };
@@ -302,9 +330,15 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
       if (condition && items.length > 0) {
         if (goal.products.length === 1) {
           const vid = giftVariantIds[0];
+          // if (!giftLines.some(i => i.variant_id === vid)) {
+          //   await addFreeGift(vid);
+          // }
+
           if (!giftLines.some(i => i.variant_id === vid)) {
+            createGiftPlaceholders([goal.products[0]], 1);
             await addFreeGift(vid);
           }
+          
         } else if (!giftLines.length) {
           showGiftPopup(goal.products, goal.giftQty || 1);
         }

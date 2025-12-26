@@ -115,8 +115,101 @@ function formatShopMoney(amountInCents) {
     return result;
   };
 })();
+
+
  
- 
+/* =====================================================
+   OPTIMAIO PUBLIC SDK (BASIC)
+   Allows merchants to hook into events
+===================================================== */
+
+/* =====================================================
+   OPTIMAIO PUBLIC SDK
+   on / do / get
+===================================================== */
+
+(function () {
+  if (window.optimaio) return;
+
+  let checkoutOverrideFn = null; // 🔒 SINGLE owner
+
+  window.optimaio = {
+    /* -------------------------
+       EVENTS
+    -------------------------- */
+    on(event, callback) {
+      document.addEventListener(`optimaio:${event}`, (e) => {
+        try {
+          callback(e.detail || {});
+        } catch (err) {
+          console.warn("Optimaio user script error:", err);
+        }
+      });
+    },
+
+    /* -------------------------
+       ACTIONS
+    -------------------------- */
+    do(action) {
+      switch (action) {
+        case "openCart":
+          window.__OPTIMAIO_OPEN_DRAWER__?.();
+          break;
+
+        case "closeCart":
+          window.__OPTIMAIO_CLOSE_DRAWER__?.();
+          break;
+
+        case "refreshCart":
+          window.OptimaioCartController?.refresh();
+          break;
+
+        default:
+          console.warn(`Optimaio.do(): Unknown action "${action}"`);
+      }
+    },
+
+    /* -------------------------
+       READERS
+    -------------------------- */
+    get(key) {
+      switch (key) {
+        case "cartInfo":
+          return window.__OPTIMAIO_LAST_CART__ || null;
+
+        case "isOpen":
+          return !!window.__OPTIMAIO_DRAWER_OPEN__;
+
+        default:
+          return null;
+      }
+    },
+
+    /* -------------------------
+       CHECKOUT OVERRIDE (🔥)
+    -------------------------- */
+    overrideCheckout(fn) {
+      if (typeof fn !== "function") {
+        console.warn("optimaio.overrideCheckout expects a function");
+        return;
+      }
+
+      checkoutOverrideFn = fn;
+      console.log("✅ Optimaio checkout override registered");
+    },
+
+    /* 🔒 INTERNAL (do not document) */
+    __runCheckoutOverride(cart, discounts) {
+      if (checkoutOverrideFn) {
+        checkoutOverrideFn(cart, discounts);
+        return true;
+      }
+      return false;
+    }
+  };
+})();
+
+
  
 // --------------------------------------------------------------
 // PART 1 / 3 — Initialization + Helpers + Currency Extraction
@@ -394,7 +487,9 @@ function formatShopMoney(amountInCents) {
     ------------------------------ */
  
     document.addEventListener("optimaio:cart:updated", (e) => {
+      window.__OPTIMAIO_LAST_CART__ = e.detail; // ✅ ADD
   renderCart(e.detail);
+  bindCheckoutButton(); // ✅ ensure always bound
 });
  
 // ✔ FIX: only re-render with latest cart, DO NOT refetch campaigns
@@ -444,6 +539,57 @@ document.addEventListener("optimaio:cart:refresh", async () => {
         };
       });
     }
+
+    /* ------------------------------
+   CHECKOUT BUTTON INTERCEPT
+------------------------------ */
+function bindCheckoutButton() {
+  const btn = drawer.querySelector(".optimaio-checkout-btn");
+  if (!btn || btn.dataset.optimaioBound) return;
+
+  btn.dataset.optimaioBound = "true";
+
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 1️⃣ Always use latest cart
+    const cart =
+      window.__OPTIMAIO_LAST_CART__ ||
+      await window.OptimaioCartController.getCart();
+
+    const discountCodes =
+      cart?.discount_codes?.map(d => d.code) || [];
+
+    // 2️⃣ Analytics / tracking hook
+    document.dispatchEvent(
+      new CustomEvent("optimaio:checkoutAttempt", {
+        detail: { cart }
+      })
+    );
+
+    // 3️⃣ Override takes FULL control (Corner Cart behavior)
+    // 3️⃣ Override takes FULL control (Corner Cart behavior)
+const overridden = (() => {
+  try {
+    return window.optimaio.__runCheckoutOverride(
+      cart,
+      discountCodes
+    );
+  } catch (e) {
+    console.error("Optimaio checkout override error:", e);
+    return false;
+  }
+})();
+
+if (overridden) return;
+
+
+    // 4️⃣ Default Shopify fallback
+    window.location.href = "/checkout";
+  });
+}
+
  
     // --------------------------------------------------------------
 // PART 3 / 3 — Recommendations + ATC Interceptor + Observers
@@ -637,15 +783,25 @@ if (section) section.style.display = "";
     ------------------------------ */
     function openDrawer() {
   window.optimaioClearEffects();
+  // 🔒 LOCK SCROLL (CRITICAL)
+  document.body.classList.add("optimaio-cart-open");
+  window.__OPTIMAIO_DRAWER_OPEN__ = true; // ✅ ADD
   window.OptimaioCartController.refresh();
   drawer.classList.add("open");
+  document.dispatchEvent(new CustomEvent("optimaio:open"));
+
 }
- 
+window.__OPTIMAIO_OPEN_DRAWER__ = openDrawer;
  
     function closeDrawer() {
       drawer.classList.remove("open");
+      // 🔓 UNLOCK SCROLL
+  document.body.classList.remove("optimaio-cart-open"); 
+  window.__OPTIMAIO_DRAWER_OPEN__ = false; // ✅ ADD
       window.optimaioClearEffects();
+      document.dispatchEvent(new CustomEvent("optimaio:close"));
     }
+    window.__OPTIMAIO_CLOSE_DRAWER__ = closeDrawer;
  
     cornerCart.addEventListener("click", openDrawer);
     closeBtn.addEventListener("click", closeDrawer);
@@ -680,6 +836,10 @@ if (section) section.style.display = "";
  
     bindCartTriggers();
     setTimeout(bindCartTriggers, 1500);
+
+    
+/* ✅ Checkout button */
+bindCheckoutButton();
  
  
     /* ------------------------------
@@ -706,6 +866,8 @@ if (section) section.style.display = "";
     if (!drawer) return;
  
     window.optimaioClearEffects();
+    // 🔒 LOCK BODY SCROLL (MISSING PART)
+  document.body.classList.add("optimaio-cart-open");
     window.OptimaioCartController.refresh();
  
     drawer.classList.add("open");

@@ -45,6 +45,18 @@
   box-sizing: border-box;
 }
 
+body.optimaio-cart-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+.optimaio-cart-drawer__middle {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+
 /* ========== Corner Cart Button ========== */
 #optimaio-corner-cart {
   position: fixed;
@@ -56,7 +68,7 @@
   border-radius: 40px;
   cursor: pointer;
   font-size: 14px;
-  z-index: calc(var(--optimaio-z-index, 10000) + 1);
+  z-index: calc(var(--optimaio-z-index, 10000) - 1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 #optimaio-corner-cart span {
@@ -404,6 +416,19 @@
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
+.optimaio-recommendations-list::-webkit-scrollbar {
+  height: 6px;              /* slim */
+}
+
+.optimaio-recommendations-list::-webkit-scrollbar-track {
+  background: transparent; /* no track row */
+}
+
+  .optimaio-recommendations-list::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.35);
+    border-radius: 6px;
+  }
+
 
 .optimaio-recommendation-card {
   flex: 0 0 100%;
