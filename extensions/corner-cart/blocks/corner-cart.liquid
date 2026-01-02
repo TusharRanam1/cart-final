@@ -516,16 +516,18 @@ if (AUTO_REFRESH_TIMER > 0) {
     <span class="optimaio-time"><strong>00</strong>s</span>
   </span>
 </div>
-{% render 'optimaio-progress-bar' %}
+
  
   <!-- Middle Scrollable Body -->
   <div class="optimaio-cart-drawer__middle">
     
- 
+    
     <!-- TAB: CART -->
-    <div class="optimaio-cart-drawer-border-radius">
+    {% comment %} <div class="optimaio-cart-drawer-border-radius"> {% endcomment %}
     <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
-     </div>
+     {% comment %} </div> {% endcomment %}
+
+     {% render 'optimaio-progress-bar' %}
 
       {% comment %} <!-- 🔒 Hidden template used by BXGY to render the instant gift card -->
 <template id="optimaio-free-gift-template">

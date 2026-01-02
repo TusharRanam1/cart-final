@@ -391,7 +391,7 @@ function formatShopMoney(amountInCents) {
               </div>
             </div>
  
-            ${item.properties?.isBXGYGift
+            ${item.properties?.isBXGYGift || item.properties?.isFreeGift
               ? `<div class="optimaio-cart-item__discount optimaio-free-gift-badge"><span>🎁 FREE GIFT</span></div>`
               : item.discounts?.length
                 ? `<div class="optimaio-cart-item__discount">

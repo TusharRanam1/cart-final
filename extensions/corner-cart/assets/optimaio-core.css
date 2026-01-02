@@ -156,8 +156,9 @@ body.optimaio-cart-open {
      display: block;
     padding: 6px 0;
     background-color: var(--drawer-bg);
-    margin: 6px 12px;
-    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    /* margin: 6px 12px;
+    border-radius: 10px; */
 }
 
 /* Top message text */
