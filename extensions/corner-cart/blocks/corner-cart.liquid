@@ -386,7 +386,8 @@ if (AUTO_REFRESH_TIMER > 0) {
       const bannerStyle = settings.bannerStyle || {};
   
       const roots = [
-        document.getElementById("optimaio-cart-drawer")
+        document.getElementById("optimaio-cart-drawer"),
+  document.getElementById("optimaio-corner-cart")
       ].filter(Boolean);
   
       if (!roots.length) return;
@@ -522,8 +523,9 @@ if (AUTO_REFRESH_TIMER > 0) {
     
  
     <!-- TAB: CART -->
+    <div class="optimaio-cart-drawer-border-radius">
     <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
-      
+     </div>
 
       {% comment %} <!-- 🔒 Hidden template used by BXGY to render the instant gift card -->
 <template id="optimaio-free-gift-template">

@@ -55,6 +55,10 @@ body.optimaio-cart-open {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+.optimaio-cart-drawer-border-radius{
+  border-radius: 10px;
+  overflow: hidden;
+}
 
 
 /* ========== Corner Cart Button ========== */
