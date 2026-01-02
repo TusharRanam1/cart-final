@@ -42,15 +42,17 @@ export const loader = async ({ request }) => {
 
   const res = await admin.graphql(query);
   const data = await res.json();
+let settings = {
+  theme: "theme1",
+  bannerStyle: {
+    bannerType: "solid",
+  },
+  colors: {},
+  customCSS: "",
+  customJS: "",
+  zIndex: "auto",
+};
 
-  let settings = {
-    theme: "theme1",
-    bannerStyle: {},
-    colors: {},
-    customCSS: "",
-    customJS: "",
-    zIndex: "auto",
-  };
 
   console.log("Loader fetched data:", data);
   if (data?.data?.shop?.metafield?.value) {
@@ -85,6 +87,18 @@ const [zIndex, setZIndex] = useState(() => settings.zIndex);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+useEffect(() => {
+  if (!initialSnapshot) return;
+
+  // 🔥 If theme changed
+  if (selectedTheme !== initialSnapshot.theme) {
+    // Reset banner + colors ONLY
+    setBannerStyle({ bannerType: "solid" });
+    setColors({});
+  }
+}, [selectedTheme]);
+
+
   // Initialize Snapshot (first load)
 useEffect(() => {
   if (!isInitialized) {
@@ -108,7 +122,8 @@ useEffect(() => {
     bannerType: settings.bannerStyle?.bannerType || "solid",
     ...settings.bannerStyle,
   });
-  setColors(settings.colors);
+ setColors(settings.colors || {});
+
   setCustomCSS(settings.customCSS);
   setCustomJS(settings.customJS);
   setZIndex(settings.zIndex);
@@ -135,31 +150,33 @@ useEffect(() => {
 
   // Save settings
   const handleSave = async () => {
-    const payload = {
-      selectedTheme,
-      bannerStyle,
-      colors,
-      customCSS,
-      customJS,
-      zIndex,
-    };
-
-    const res = await fetch("/api/cart-settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (data.ok) {
-      setInitialSnapshot(currentSnapshot);
-      setSaveBarOpen(false);
-      shopify?.saveBar?.hide("cart-settings-save-bar");
-    } else {
-      alert("❌ Failed to save cart settings");
-    }
+  const payload = {
+    selectedTheme,
+    bannerStyle,
+    colors,
+    customCSS,
+    customJS,
+    zIndex,
+    themeChanged: selectedTheme !== initialSnapshot.theme, // 👈 IMPORTANT
   };
+
+  const res = await fetch("/api/cart-settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    setInitialSnapshot(currentSnapshot);
+    setSaveBarOpen(false);
+    shopify?.saveBar?.hide("cart-settings-save-bar");
+  } else {
+    alert("❌ Failed to save cart settings");
+  }
+};
+
 
   // Discard does not need API
   const handleDiscard = () => {
@@ -221,10 +238,16 @@ useEffect(() => {
                 description="Buttons, text, and progress bar colors."
                 icon={PaintBrushFlatIcon}
               >
-                <CustomizeColorSelector
-                value={colors}
-                  onChange={(v) => setColors(v)}
-                />
+               <CustomizeColorSelector
+  value={colors}
+  onChange={(key, value) => {
+    setColors((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }}
+/>
+
               </Colabssiblecom>
 
             </InlineGrid>
