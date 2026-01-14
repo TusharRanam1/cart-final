@@ -5,17 +5,17 @@
 
 #optimaio-cart-drawer[data-optimaio-theme="theme1"] {
   /* ---------- Base Colors ---------- */
-  --drawer-bg: #fff7f8;
-  --card-bg: #ffffff;
+  --bg-primary: #fff7f8;
+  --bg-secondary: #ffffff;
   --header-bg: #ffffff;
   --summary-bg: #ffffff;
   --footer-bg: #ffffff;
 
-  --border-color: #cec5c5;
-  --scrollbar-thumb: #ccc;
+  --border: #cec5c5;
+  --bg-soft: #ccc;
 
   /* ---------- Text Colors ---------- */
-  --text-color: #222;
+  --text-primary: #222;
   --text-muted: #666;
 
   /* ---------- Buttons ---------- */
@@ -23,16 +23,16 @@
   --btn-color: #fff;
 
   /* ---------- Accents ---------- */
-  --accent-color: #d48b8b;
+  --accent: #d48b8b;
 
   /* ---------- Alerts / Progress ---------- */
   --alert-bg: #fdeaea;
   --alert-text: #a33;
-  --progress-active: #d48b8b;
+  --accent: #d48b8b;
   --progress-inactive: #ccc;
 
   /* ---------- Discounts ---------- */
-  --discount-bg: #fdeaea;
+  --bg-soft: #fdeaea;
   --discount-text: #a33;
 
   /* ---------- Spinner ---------- */

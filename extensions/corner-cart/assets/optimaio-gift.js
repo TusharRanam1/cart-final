@@ -19,9 +19,55 @@
   window.__isBXGYRunning = false;
   window.__optimaioPopupOpen = false;
 
+  /* -----------------------------------------------------------
+   SHARED GIFT STATE (Single Source of Truth)
+----------------------------------------------------------- */
+  window.OptimaioGiftState = window.OptimaioGiftState || {
+    gifts: {},      // keep for engine safety (do NOT remove)
+    campaigns: {}   // NEW: UI + campaign state
+  };
+
+
   let debounceTimer = null;
 
 
+  function updateCampaignState({
+    campaignId,
+    isEligible,
+    maxQty,
+    eligibleGifts,
+    selectedGifts
+  }) {
+    const selectedQty = Math.min(selectedGifts.length, maxQty);
+    const isFulfilled = selectedQty >= maxQty;
+    const hasChoices = eligibleGifts.length > 1;
+  
+    window.OptimaioGiftState.campaigns[campaignId] = {
+      id: campaignId,
+  
+      state: !isEligible
+        ? "locked"
+        : isFulfilled
+          ? "unlocked"
+          : "eligible",
+  
+      fulfillment: !isFulfilled
+        ? "none"
+        : hasChoices
+          ? "choice"
+          : "auto",
+  
+      maxQty,
+  
+      gifts: {
+        eligible: eligibleGifts,
+        selected: selectedGifts.slice(0, maxQty)
+      },
+  
+      canChangeGift: isEligible && isFulfilled && hasChoices
+    };
+  }
+  
 
   /* -----------------------------------------------------------
         🔥 EARLY CAMPAIGN PREFETCH (SAFE)
@@ -33,7 +79,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const WAIT =
     navigator.connection?.effectiveType?.includes("2g") ||
-    navigator.connection?.rtt > 600 ? 200 : 80;
+      navigator.connection?.rtt > 600 ? 200 : 80;
 
   /* -----------------------------------------------------------
         SHARED CART HELPERS
@@ -55,8 +101,8 @@
   const addFreeGift = id =>
     cartChange("add", { id, quantity: 1, properties: { isFreeGift: "true" } });
 
-  const addBxgyGift = (id, qty) =>
-    cartChange("add", { id, quantity: qty, properties: { isBXGYGift: "true" } });
+  const addBxgyGift = (id, qty, campaignId) =>
+    cartChange("add", { id, quantity: qty, properties: { isBXGYGift: "true", bxgyCampaignId: campaignId } });
 
   const updateQtyToOne = key =>
     cartChange("change", { id: key, quantity: 1 });
@@ -93,20 +139,20 @@
 
   function createGiftPlaceholders(products, maxQty = 1) {
     window.__expectedFreeGifts = window.__expectedFreeGifts || {};
-  
+
     products.slice(0, maxQty).forEach(p => {
       const vid = Number(p.id.split("/").pop());
-  
+
       window.__expectedFreeGifts[vid] = {
         title: p.productTitle || p.title || "Free Gift",
         image: p.image?.url || ""
       };
     });
-  
+
     // 🔄 Re-render drawer immediately
     document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
   }
-  
+
   /* -----------------------------------------------------------
         FREE GIFT POPUP (Created once using requestIdleCallback)
   ----------------------------------------------------------- */
@@ -147,139 +193,139 @@
         FREE GIFT: POPUP HANDLER
   ----------------------------------------------------------- */
   function showGiftPopup(products, maxQty) {
-  if (window.__optimaioPopupOpen) return;
-   if (!document.querySelector('.optimaio-cart-drawer.open')) return;  // <— Correct selector
+    if (window.__optimaioPopupOpen) return;
+    if (!document.querySelector('.optimaio-cart-drawer.open')) return;  // <— Correct selector
 
-  const popup = document.getElementById("optimaio-gift-popup");
-  const container = document.getElementById("optimaio-gift-options");
-  const maxEl = document.getElementById("optimaio-max-gifts");
-  const error = document.getElementById("optimaio-gift-error");
+    const popup = document.getElementById("optimaio-gift-popup");
+    const container = document.getElementById("optimaio-gift-options");
+    const maxEl = document.getElementById("optimaio-max-gifts");
+    const error = document.getElementById("optimaio-gift-error");
 
-  maxEl.textContent = maxQty;
-  error.style.display = "none";
+    maxEl.textContent = maxQty;
+    error.style.display = "none";
 
-  container.innerHTML = products
-    .map(p => {
-      const vid = Number(p.id.split("/").pop());
-      return `
+    container.innerHTML = products
+      .map(p => {
+        const vid = Number(p.id.split("/").pop());
+        return `
         <div class="optimaio-gift-option" data-id="${vid}">
           <img src="${p.image?.url || p.featured_image || ""}" width="80" height="80">
           <p>${p.productTitle || p.title}</p>
         </div>
       `;
-    })
-    .join("");
+      })
+      .join("");
 
-  popup.style.display = "flex";
-  window.__optimaioPopupOpen = true;
+    popup.style.display = "flex";
+    window.__optimaioPopupOpen = true;
 
-  const selected = new Set();
+    const selected = new Set();
 
-  container.querySelectorAll(".optimaio-gift-option").forEach(el => {
-    el.onclick = () => {
-      const id = Number(el.dataset.id);
-      if (selected.has(id)) {
-        selected.delete(id);
-        el.classList.remove("selected");
-      } else if (selected.size < maxQty) {
-        selected.add(id);
-        el.classList.add("selected");
-      } else {
-        error.textContent = `You can select only ${maxQty} gifts.`;
-        error.style.display = "block";
-        setTimeout(() => (error.style.display = "none"), 1200);
-      }
+    container.querySelectorAll(".optimaio-gift-option").forEach(el => {
+      el.onclick = () => {
+        const id = Number(el.dataset.id);
+        if (selected.has(id)) {
+          selected.delete(id);
+          el.classList.remove("selected");
+        } else if (selected.size < maxQty) {
+          selected.add(id);
+          el.classList.add("selected");
+        } else {
+          error.textContent = `You can select only ${maxQty} gifts.`;
+          error.style.display = "block";
+          setTimeout(() => (error.style.display = "none"), 1200);
+        }
+      };
+    });
+
+    document.getElementById("optimaio-cancel-gifts").onclick = () => {
+      popup.style.display = "none";
+      window.__optimaioPopupOpen = false;
     };
-  });
 
-  document.getElementById("optimaio-cancel-gifts").onclick = () => {
-    popup.style.display = "none";
-    window.__optimaioPopupOpen = false;
-  };
+    document.getElementById("optimaio-confirm-gifts").onclick = async () => {
+      popup.style.display = "none";
+      window.__optimaioPopupOpen = false;
 
-  document.getElementById("optimaio-confirm-gifts").onclick = async () => {
-    popup.style.display = "none";
-    window.__optimaioPopupOpen = false;
+      // for (const vid of selected) await addFreeGift(vid);
 
-    // for (const vid of selected) await addFreeGift(vid);
+      const selectedProducts = products.filter(p =>
+        selected.has(Number(p.id.split("/").pop()))
+      );
 
-    const selectedProducts = products.filter(p =>
-      selected.has(Number(p.id.split("/").pop()))
-    );
-    
-    createGiftPlaceholders(selectedProducts, maxQty);
-    
-    for (const vid of selected) {
-      await addFreeGift(vid);
-    }
-    
+      createGiftPlaceholders(selectedProducts, maxQty);
 
-    runFreeGiftEngine();
-  };
-}
+      for (const vid of selected) {
+        await addFreeGift(vid);
+      }
+
+
+      runFreeGiftEngine();
+    };
+  }
 
 
 
   /* -----------------------------------------------------------
         BXGY POPUP HANDLER
 ----------------------------------------------------------- */
-function showBxgyPopup(products, maxQty, confirmCallback) {
-  if (window.__optimaioPopupOpen) return;
-  if (!document.querySelector('.optimaio-cart-drawer.open')) return;  // <— Correct selector
+  function showBxgyPopup(products, maxQty, confirmCallback) {
+    if (window.__optimaioPopupOpen) return;
+    if (!document.querySelector('.optimaio-cart-drawer.open')) return;  // <— Correct selector
 
-  const popup = document.getElementById("optimaio-gift-popup");
-  const container = document.getElementById("optimaio-gift-options");
-  const maxEl = document.getElementById("optimaio-max-gifts");
-  const error = document.getElementById("optimaio-gift-error");
+    const popup = document.getElementById("optimaio-gift-popup");
+    const container = document.getElementById("optimaio-gift-options");
+    const maxEl = document.getElementById("optimaio-max-gifts");
+    const error = document.getElementById("optimaio-gift-error");
 
-  maxEl.textContent = maxQty;
-  error.style.display = "none";
+    maxEl.textContent = maxQty;
+    error.style.display = "none";
 
-  container.innerHTML = products
-    .map(p => {
-      const vid = Number(p.id.split("/").pop());
-      return `
+    container.innerHTML = products
+      .map(p => {
+        const vid = Number(p.id.split("/").pop());
+        return `
         <div class="optimaio-gift-option" data-id="${vid}">
           <img src="${p.image?.url || p.featured_image || ""}" width="80">
           <p>${p.productTitle || p.title}</p>
         </div>
       `;
-    })
-    .join("");
+      })
+      .join("");
 
-  popup.style.display = "flex";
-  window.__optimaioPopupOpen = true;
+    popup.style.display = "flex";
+    window.__optimaioPopupOpen = true;
 
-  const selected = new Set();
+    const selected = new Set();
 
-  container.querySelectorAll(".optimaio-gift-option").forEach(el => {
-    el.onclick = () => {
-      const id = Number(el.dataset.id);
-      if (selected.has(id)) {
-        selected.delete(id);
-        el.classList.remove("selected");
-      } else if (selected.size < maxQty) {
-        selected.add(id);
-        el.classList.add("selected");
-      } else {
-        error.textContent = `You can select only ${maxQty} gifts.`;
-        error.style.display = "block";
-        setTimeout(() => (error.style.display = "none"), 1200);
-      }
+    container.querySelectorAll(".optimaio-gift-option").forEach(el => {
+      el.onclick = () => {
+        const id = Number(el.dataset.id);
+        if (selected.has(id)) {
+          selected.delete(id);
+          el.classList.remove("selected");
+        } else if (selected.size < maxQty) {
+          selected.add(id);
+          el.classList.add("selected");
+        } else {
+          error.textContent = `You can select only ${maxQty} gifts.`;
+          error.style.display = "block";
+          setTimeout(() => (error.style.display = "none"), 1200);
+        }
+      };
+    });
+
+    document.getElementById("optimaio-cancel-gifts").onclick = () => {
+      popup.style.display = "none";
+      window.__optimaioPopupOpen = false;
     };
-  });
 
-  document.getElementById("optimaio-cancel-gifts").onclick = () => {
-    popup.style.display = "none";
-    window.__optimaioPopupOpen = false;
-  };
-
-  document.getElementById("optimaio-confirm-gifts").onclick = async () => {
-    popup.style.display = "none";
-    window.__optimaioPopupOpen = false;
-    await confirmCallback(Array.from(selected));
-  };
-}
+    document.getElementById("optimaio-confirm-gifts").onclick = async () => {
+      popup.style.display = "none";
+      window.__optimaioPopupOpen = false;
+      await confirmCallback(Array.from(selected));
+    };
+  }
 
 
 
@@ -288,7 +334,7 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
   ----------------------------------------------------------- */
   async function runFreeGiftEngine() {
     if (window.__isFreeGiftRunning) return;
-     if (window.__optimaioPopupOpen) return;  // ⭐ ADD THIS LINE
+    if (window.__optimaioPopupOpen) return;  // ⭐ ADD THIS LINE
     window.__isFreeGiftRunning = true;
 
     try {
@@ -323,6 +369,20 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
           ? totalQty >= Number(goal.target)
           : subtotal >= Number(goal.target);
 
+      
+
+      // 🔐 UPDATE FREE GIFT STATE
+      updateCampaignState({
+        campaignId: campaign.id,
+        campaignType: "tiered",
+        isEligible: condition,
+        maxQty: goal.giftQty || 1,
+        eligibleGifts: giftVariantIds,
+        selectedGifts: giftLines.map(i => i.variant_id)
+      });
+
+
+
       // Keep free gifts always quantity = 1
       for (const line of giftLines)
         if (line.quantity !== 1) await updateQtyToOne(line.key);
@@ -338,7 +398,7 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
             createGiftPlaceholders([goal.products[0]], 1);
             await addFreeGift(vid);
           }
-          
+
         } else if (!giftLines.length) {
           showGiftPopup(goal.products, goal.giftQty || 1);
         }
@@ -355,7 +415,7 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
   ----------------------------------------------------------- */
   async function runBxgyEngine() {
     if (window.__isBXGYRunning) return;
-     if (window.__optimaioPopupOpen) return;  // ⭐ ADD THIS LINE
+    if (window.__optimaioPopupOpen) return;  // ⭐ ADD THIS LINE
     window.__isBXGYRunning = true;
 
     try {
@@ -369,7 +429,10 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
       if (!bxgyCampaigns.length) return;
 
       const cart = await getCart();
-      const giftLines = cart.items.filter(i => i.properties?.isBXGYGift);
+      const giftLines = cart.items.filter(
+        i => i.properties?.isBXGYGift && i.properties?.bxgyCampaignId
+      );
+
       const ops = [];
       const usedGiftIds = new Set();
 
@@ -396,6 +459,19 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
         const getVariantIds = (goal.getProducts || []).map(p =>
           Number(p.id.split("/").pop())
         );
+
+        // ✅ ADD HERE
+        const campaignGiftLines = giftLines.filter(
+          i =>
+            getVariantIds.includes(i.variant_id) &&
+            i.properties?.bxgyCampaignId === bxgy.id
+        );
+
+
+        // campaignGiftLines.forEach(line => {
+        //   usedGiftIds.add(line.variant_id);
+        // });
+
 
         let condition = false;
 
@@ -445,69 +521,72 @@ function showBxgyPopup(products, maxQty, confirmCallback) {
           condition = qty >= buyQty;
         }
 
+
+
+        // 🔐 UPDATE BXGY GIFT STATE
+        updateCampaignState({
+          campaignId: bxgy.id,
+          campaignType: "bxgy",
+          isEligible: condition,
+          maxQty: getQty,
+          eligibleGifts: getVariantIds,
+          selectedGifts: campaignGiftLines.map(i => i.variant_id)
+        });
+
+
+
         /* APPLY GIFTS */
         /* APPLY GIFTS */
-if (condition) {
+        /* APPLY GIFTS */
+        if (condition) {
+          // ✅ Only protect gifts when campaign is valid
+          campaignGiftLines.forEach(line => {
+            usedGiftIds.add(line.variant_id);
+          });
 
-  // ⭐ CASE 1: MULTIPLE BXGY GIFTS → Use Popup
-  if (getVariantIds.length > 1 && giftLines.length === 0) {
-    showBxgyPopup(goal.getProducts, getQty, async selectedIds => {
 
-      // ⭐ Add placeholders for selected gifts
-      window.__expectedFreeGifts = window.__expectedFreeGifts || {};
+          // 🟢 MULTI BXGY → popup only if NO gift from THIS campaign exists
+          if (getVariantIds.length > 1 && campaignGiftLines.length === 0) {
+            showBxgyPopup(goal.getProducts, getQty, async selectedIds => {
 
-      for (const vid of selectedIds) {
-        usedGiftIds.add(vid);
+              window.__expectedFreeGifts = window.__expectedFreeGifts || {};
 
-        const productData = goal.getProducts.find(
-          p => Number(p.id.split("/").pop()) === vid
-        );
+              for (const vid of selectedIds) {
+                usedGiftIds.add(vid);
 
-        window.__expectedFreeGifts[vid] = {
-          title: productData?.productTitle || productData?.title,
-          image: productData?.image?.url
-        };
-      }
+                const productData = goal.getProducts.find(
+                  p => Number(p.id.split("/").pop()) === vid
+                );
 
-      // ⭐ Immediately refresh drawer to show placeholder
-      document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
+                window.__expectedFreeGifts[vid] = {
+                  title: productData?.productTitle || productData?.title,
+                  image: productData?.image?.url
+                };
 
-      // ⭐ Now actually add gifts to cart
-      for (const vid of selectedIds) {
-        ops.push(addBxgyGift(vid, 1));
-      }
-    });
+                await addBxgyGift(vid, 1, bxgy.id);
 
-    continue; // Important: Do NOT auto-add gifts
-  }
+              }
 
-  // ⭐ CASE 2: ONLY ONE BXGY GIFT → auto placeholder + auto-add
-  for (const vid of getVariantIds) {
-    usedGiftIds.add(vid);
+              document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
+            });
 
-    // ⭐ Placeholder logic
-    window.__expectedFreeGifts = window.__expectedFreeGifts || {};
-    const productData = goal.getProducts.find(
-      p => Number(p.id.split("/").pop()) === vid
-    );
-    window.__expectedFreeGifts[vid] = {
-      title: productData?.productTitle || productData?.title,
-      image: productData?.image?.url
-    };
+            continue; // ⛔ never auto-add multi BXGY
+          }
 
-    document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
+          // 🟢 SINGLE BXGY → auto add (Free Gift behavior)
+          if (getVariantIds.length === 1) {
+            const vid = getVariantIds[0];
+            usedGiftIds.add(vid);
 
-    // ⭐ Add or update gift in cart
-    const line = giftLines.find(i => i.variant_id === vid);
-    if (line) {
-      if (line.quantity !== getQty)
-        ops.push(cartChange("change", { id: line.key, quantity: getQty }));
-    } else {
-      ops.push(addBxgyGift(vid, getQty));
-    }
-  }
-}
+            const line = campaignGiftLines.find(i => i.variant_id === vid);
 
+            if (!line) {
+              await addBxgyGift(vid, getQty, bxgy.id);
+            } else if (line.quantity !== getQty) {
+              await cartChange("change", { id: line.key, quantity: getQty });
+            }
+          }
+        }
       }
 
       /* REMOVE UNUSED BXGY GIFTS */
@@ -526,15 +605,27 @@ if (condition) {
   async function runGiftEngine() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
+
+      // ✅ RESET campaign UI state each run
+      window.OptimaioGiftState.campaigns = {};
       await runFreeGiftEngine();
       await runBxgyEngine();
       document.dispatchEvent(new CustomEvent("optimaio:cart:refresh"));
+      console.log("🎯 Final Campaign State", window.OptimaioGiftState.campaigns);
+
+
+      // 🔔 Notify UI blocks (offer cards, etc.)
+      document.dispatchEvent(
+        new CustomEvent("optimaio:gifts:updated", {
+          detail: window.OptimaioGiftState
+        })
+      );
     }, 150);
   }
 
-   /* -----------------------------------------------------------
-        GLOBAL CART EVENT HOOKS (GUARDED)
-  ----------------------------------------------------------- */
+  /* -----------------------------------------------------------
+       GLOBAL CART EVENT HOOKS (GUARDED)
+ ----------------------------------------------------------- */
   if (!window.__OptimaioFetchWrapped) {
     window.__OptimaioFetchWrapped = true;
 

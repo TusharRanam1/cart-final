@@ -1,40 +1,40 @@
-/* =====================================================
-   OPTIMAIO CART DRAWER - THEME: COOL
-   (Blue-accented modern theme)
-===================================================== */
+  /* =====================================================
+    OPTIMAIO CART DRAWER - THEME: COOL
+    (Blue-accented modern theme)
+  ===================================================== */
 
-#optimaio-cart-drawer[data-optimaio-theme="theme2"] {
-  /* ---------- Base Colors ---------- */
-  --drawer-bg: #f4f8ff;           /* soft blue-tinted background */
-  --card-bg: #ffffff;
-  --header-bg: #ffffff;
-  --summary-bg: #ffffff;
-  --footer-bg: #ffffff;
+  #optimaio-cart-drawer[data-optimaio-theme="theme2"] {
+    /* ---------- Base Colors ---------- */
+    --bg-primary: #f4f8ff;           /* soft blue-tinted background */
+    --bg-secondary: #ffffff;
+    --bg-soft: #e0edff;
+    --summary-bg: #ffffff;
 
-  --border-color: #dce6f8;
-  --scrollbar-thumb: #b7c9e7;
 
-  /* ---------- Text Colors ---------- */
-  --text-color: #1a1d29;
-  --text-muted: #5a6886;
+    --border: #dce6f8;
+    --shadow: 0 4px 12px rgba(0,0,0,0.2);
 
-  /* ---------- Buttons ---------- */
-  --btn-bg: #2563eb;              /* vibrant blue */
-  --btn-color: #ffffff;
+    /* ---------- Text Colors ---------- */
+    --text-primary: #1a1d29;
+    --text-secondary: Red;
+    --text-muted: #5a6886;
 
-  /* ---------- Accents ---------- */
-  --accent-color: #3b82f6;        /* lighter blue accent for active states */
+    /* ---------- Buttons ---------- */
+  
 
-  /* ---------- Alerts / Progress ---------- */
-  --alert-bg: #e9f2ff;
-  --alert-text: #1e40af;          /* deep blue text */
-  --progress-active: #3b82f6;
-  --progress-inactive: #cbd5e1;
+    /* ---------- Accents ---------- */
+    --accent: #3b82f6;        /* lighter blue accent for active states */
+    --accent-soft: #2563eb;              /* vibrant blue */
+    --accent-contrast: #ffffff;
+    /* ---------- Alerts / Progress ---------- */
+    /* --alert-bg: #e9f2ff;
+    --alert-text: #1e40af;          */
+    --progress-inactive: #cbd5e1;
 
-  /* ---------- Discounts ---------- */
-  --discount-bg: #e0edff;
-  --discount-text: #1e3a8a;
+    /* ---------- Discounts ---------- */
+ 
+    --discount-text: #1e3a8a;
 
-  /* ---------- Spinner ---------- */
-  --spinner-color: #2563eb;
-}
+    /* ---------- Spinner ---------- */
+    --spinner-color: #2563eb;
+  }

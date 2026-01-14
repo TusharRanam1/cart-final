@@ -4,31 +4,35 @@
 } */
 
 .optimaio-countdown {
-  background: var(--drawer-bg);
-  color: var(--text-color);
-  padding: 6px 12px;
-  /* border-radius: 8px; */
-  font-size: 10px;
-  font-weight: 600;
+  background: var(--bg-secondary);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
   display: flex;
-  justify-content: space-between;
+  margin: 0 auto;
+  width: max-content;
+  gap: 8px;
   align-items: center;
+}
+
+.optimaio-countdown-label {
+  color: var(--text-secondary);
 }
 
 #optimaio-countdown-time {
   display: flex;
   gap: 6px;
+  color: var(--text-primary);
 }
 
 .optimaio-time {
-  background: var(--card-bg);
-  padding: 4px 6px;
-  border-radius: 4px;
   font-variant-numeric: tabular-nums;
 }
 
 .optimaio-time strong {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 
@@ -60,7 +64,9 @@ body.optimaio-cart-open {
   overflow: hidden;
 }
 
-
+#optimaio-cart-drawer{
+  gap: 8px;
+}
 /* ========== Corner Cart Button ========== */
 #optimaio-corner-cart {
   position: fixed;
@@ -88,7 +94,7 @@ body.optimaio-cart-open {
   width: 90%;
   max-width: 420px;
   height: 100%;
-  background: var(--drawer-bg);
+  background: var(--bg-primary);
   transform: translateX(100%);
   transition: transform 0.3s ease;
   box-shadow: -3px 0 12px rgba(0,0,0,0.25);
@@ -106,20 +112,20 @@ body.optimaio-cart-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--header-bg);
+  padding: 12px;
+  /* border-bottom: 1px solid var(--border); */
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 5;
 }
 .optimaio-cart-tile {
   font-size: 18px;
-  font-weight: 700;
-  color: var(--text-color);
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
-  line-height: 1.2;
+  line-height: 24px;
   font-family: inherit;
   letter-spacing: 0; /* Prevent theme overrides */
 }
@@ -129,7 +135,7 @@ body.optimaio-cart-open {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 /* ========== Drawer Middle Scroll Area ========== */
@@ -142,7 +148,7 @@ body.optimaio-cart-open {
   width: 6px;
 }
 .optimaio-cart-drawer__middle::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
+  background: var(--bg-soft);
   border-radius: 4px;
 }
 
@@ -155,8 +161,8 @@ body.optimaio-cart-open {
 #optimaio-progress-container {
      display: block;
     padding: 6px 0;
-    background-color: var(--drawer-bg);
-    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
     /* margin: 6px 12px;
     border-radius: 10px; */
 }
@@ -167,7 +173,7 @@ body.optimaio-cart-open {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 10px;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 /* Bar background */
@@ -183,9 +189,10 @@ body.optimaio-cart-open {
 /* Fill bar (moves left → right) */
 .optimaio-progress-fill {
   height: 100%;
-  background: var(--progress-active) ;
+  background: var(--accent) ;
   width: 0%;
-  border-radius: 6px;
+  height: 6px;
+  border-radius: 999px;
   transition: width .4s ease;
 }
 
@@ -224,16 +231,16 @@ body.optimaio-cart-open {
   width: 21px;
   height: 20px;
   padding: 1px;
-  background: var(--card-bg);
+  background: var(--bg-secondary);
   border-radius: 50%;
-  border: 2px solid var(--progress-active);
-  stroke: var(--progress-active);
+  border: 2px solid var(--accent);
+  stroke: var(--accent);
   fill: var(--progress-inactive);
 }
 
 /* Reached Goal */
 .optimaio-milestone.active svg {
-  background: var(--progress-active);
+  background: var(--accent);
   stroke: var(--progress-icon-active-stroke, #fff);
   fill: var(--progress-icon-active-fill, #fff);
 }
@@ -253,7 +260,7 @@ body.optimaio-cart-open {
 .optimaio-milestone-label {
   font-size: 11px;
   /* font-weight: bold; */
-  color: var(--text-color);
+  color: var(--text-primary);
   line-height: normal;
   margin-top: 4px;
   word-wrap: break-word;
@@ -284,8 +291,8 @@ body.optimaio-cart-open {
 .optimaio-cart-item-card {
   display: flex;
   gap: 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   /* border-radius: 10px; */
   padding: 12px;
   position: relative;
@@ -315,7 +322,7 @@ body.optimaio-cart-open {
   flex: 1;
   white-space: normal;
   word-break: break-word;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 .optimaio-cart-item__remove {
   flex-shrink: 0;
@@ -327,7 +334,7 @@ body.optimaio-cart-open {
   line-height: 1;
 }
 .optimaio-cart-item__remove:hover {
-  color: var(--accent-color);
+  color: var(--accent-soft);
 }
 .optimaio-cart-item__variant {
   font-size: 12px;
@@ -352,20 +359,20 @@ body.optimaio-cart-open {
 }
 .optimaio-price {
   font-weight: 700;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .optimaio-qty-btn {
-  background: var(--btn-bg);
-  color: var(--btn-color);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 4px;
 }
 
 .optimaio-cart-item__qty {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--text-primary);
   min-width: 20px;
   text-align: center;
   font-family: inherit;
@@ -378,7 +385,7 @@ body.optimaio-cart-open {
   font-size: 12px;
   color: var(--discount-text);
   margin-top: 4px;
-  background: var(--discount-bg);
+  background: var(--bg-soft);
   padding: 4px 6px;
   border-radius: 4px;
   display: inline-block;
@@ -438,8 +445,8 @@ body.optimaio-cart-open {
 .optimaio-recommendation-card {
   flex: 0 0 100%;
   scroll-snap-align: start;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
   display: flex;
@@ -458,12 +465,12 @@ body.optimaio-cart-open {
   font-size: 12px;
   font-weight: 600;
   margin: 0;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 .optimaio-rec-price {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--text-primary);
   margin: 2px 0;
 }
 .optimaio-rec-add {
@@ -479,9 +486,9 @@ body.optimaio-cart-open {
 /* ========== Summary & Checkout ========== */
 .optimaio-cart-drawer__summary-checkout {
   flex-shrink: 0;
-  border-top: 1px solid var(--border-color);
-  padding: 12px 14px;
-  background: var(--summary-bg);
+  border-top: 1px solid var(--border);
+  padding: 8px 12px;
+  background: var(--bg-secondary);
   margin: 6px 12px;
   border-radius: 10px;
 }
@@ -497,17 +504,17 @@ body.optimaio-cart-open {
 }
 .optimaio-total-label {
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 .optimaio-total-amount {
   font-weight: 700;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 .optimaio-checkout-btn {
   margin-top: 8px;
   width: 100%;
-  background: var(--btn-bg);
-  color: var(--btn-color);
+  background: var(--accent);
+  color: var(--accent-contrast);
   padding: 10px;
   border: none;
   border-radius: 6px;
@@ -520,8 +527,8 @@ body.optimaio-cart-open {
   flex-shrink: 0;
   display: flex;
   justify-content: space-around;
-  border-top: 1px solid var(--border-color);
-  background: var(--footer-bg);
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
   padding: 12px;
   position: sticky;
   bottom: 0;
@@ -534,16 +541,19 @@ body.optimaio-cart-open {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--text-primary);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }
 .optimaio-cart-drawer__footer button.active {
-  color: var(--accent-color);
+  color: var(--accent);
   font-weight: 600;
 }
 
 /* ========== Tabs Control ========== */
 .optimaio-cart-tab { display: none; }
-.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart { display: block; }
+.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart { display: block; border-radius: 16px; overflow: hidden;}
 .optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-tab--offers { display: block; }
 .optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-drawer__summary-checkout { display: none; }
 
@@ -594,12 +604,12 @@ body.optimaio-cart-open {
   font-size: 18px;
   font-weight: 700;
   margin: 3px 0 15px;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .optimaio-offer-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
@@ -638,7 +648,7 @@ body.optimaio-cart-open {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .optimaio-offer-subtitle {
@@ -660,7 +670,7 @@ body.optimaio-cart-open {
   height: 50px;
   border-radius: 6px;
   object-fit: cover;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
 }
 
 .optimaio-offer-product span {

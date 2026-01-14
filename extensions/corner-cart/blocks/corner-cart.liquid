@@ -1,5 +1,6 @@
 <script>
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
+  window.__SHOP_DOMAIN__ = "{{ shop.permanent_domain }}";
 </script>
 
 <script>
@@ -11,6 +12,26 @@
   console.log("🧾 Optimaio Cart Metafields:", window.__OPTIMAIO_CART__);
 </script>
 
+<script>
+  function normalizeCampaignResponse(raw) {
+    // New API shape → { campaigns: { campaigns: [] } }
+    if (
+      raw &&
+      raw.campaigns &&
+      Array.isArray(raw.campaigns.campaigns)
+    ) {
+      return { campaigns: raw.campaigns.campaigns };
+    }
+
+    // Old / expected shape → { campaigns: [] }
+    if (raw && Array.isArray(raw.campaigns)) {
+      return raw;
+    }
+
+    // Safety fallback
+    return { campaigns: [] };
+  }
+</script>
 
 
 {% comment %} <script>
@@ -97,144 +118,103 @@ document.addEventListener("DOMContentLoaded", function() {
 </script> {% endcomment %}
 
 <script>
-/* ----------------------------------------------------
-   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE
-   - Supports CACHE or FRESH mode
-   - Still guarantees: ONLY ONE fetch at a time
----------------------------------------------------- */
-
-const OPTIMIAO_SESSION_CACHE_KEY = "__OPTIMIAO_CAMPAIGN_CACHE__";
-
-window.__OPTIMIAO_FETCH_STATE__ = {
-  data: null,        // saved campaign data
-  pending: null,     // shared promise
-  lastFetch: 0,      // timestamp
-  TTL: 0             // 👈 CACHE TIME IN MS (0 = ALWAYS FRESH)
-};
-
-/* ====================================================
-   CONFIGURE CACHE TIME HERE
-==================================================== */
-window.__OPTIMIAO_FETCH_STATE__.TTL = 60000; // 1 minute
-
-
-/* ----------------------------------------------------
-   RESTORE CACHE FROM SESSION (on reload)
----------------------------------------------------- */
-(function restoreCampaignCacheFromSession() {
-  try {
-    const raw = sessionStorage.getItem(OPTIMIAO_SESSION_CACHE_KEY);
-    if (!raw) return;
-
-    const parsed = JSON.parse(raw);
-    const now = Date.now();
-
-    if (
-      parsed.data &&
-      parsed.timestamp &&
-      now - parsed.timestamp < window.__OPTIMIAO_FETCH_STATE__.TTL
-    ) {
-      window.__OPTIMIAO_FETCH_STATE__.data = parsed.data;
-      window.__OPTIMIAO_FETCH_STATE__.lastFetch = parsed.timestamp;
-
-      console.log(
-        "%c📦 Optimaio Campaign restored from session cache",
-        "color:#2196f3",
-        parsed.data
-      );
-    } else {
-      sessionStorage.removeItem(OPTIMIAO_SESSION_CACHE_KEY);
-    }
-  } catch (e) {
-    sessionStorage.removeItem(OPTIMIAO_SESSION_CACHE_KEY);
-  }
-})();
-
-
-/* ----------------------------------------------------
-   MAIN FETCH FUNCTION (fresh request)
----------------------------------------------------- */
-async function fetchCampaignFresh() {
-  const state = window.__OPTIMIAO_FETCH_STATE__;
-  const start = performance.now();
-
-  if (state.pending) return state.pending;
-
-  state.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
-    cache: "no-store"
-  })
-    .then(res => res.json())
-    .then(json => {
-      state.data = json;
-      state.lastFetch = Date.now();
-
-      // 💾 Persist to session cache
-      try {
-        sessionStorage.setItem(
-          OPTIMIAO_SESSION_CACHE_KEY,
-          JSON.stringify({
-            data: json,
-            timestamp: state.lastFetch
-          })
-        );
-      } catch (e) {}
-
-      console.log(
-        `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
-        "color:#4caf50",
-        json
-      );
-
-      state.pending = null;
-      return json;
+  /* ----------------------------------------------------
+     🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE
+     - In-memory caching ONLY
+     - Single fetch lock
+  ---------------------------------------------------- */
+  
+  window.__OPTIMIAO_FETCH_STATE__ = {
+    data: null,        // cached campaign data
+    pending: null,     // shared fetch promise
+    lastFetch: 0,      // timestamp
+    TTL: 60000         // 👈 CACHE TIME IN MS (0 = ALWAYS FRESH)
+  };
+  
+  
+  /* ----------------------------------------------------
+     MAIN FETCH FUNCTION (fresh request)
+  ---------------------------------------------------- */
+  async function fetchCampaignFresh() {
+    const state = window.__OPTIMIAO_FETCH_STATE__;
+    const start = performance.now();
+    const url = `https://campaign-worker.developer-208.workers.dev/?shop=${window.__SHOP_DOMAIN__}`;
+  
+    // 🔒 Prevent parallel fetches
+    if (state.pending) return state.pending;
+  
+    state.pending = fetch(url, {
+      cache: "no-store"
     })
-    .catch(err => {
-      console.warn("⚠️ Optimaio Fetch Failed", err);
-      state.pending = null;
-      throw err;
-    });
-
-  return state.pending;
-}
-
-
-/* ----------------------------------------------------
-   PUBLIC FUNCTION USED BY ALL SCRIPTS
----------------------------------------------------- */
-window.getCampaignData = async function() {
-  const state = window.__OPTIMIAO_FETCH_STATE__;
-  const now = Date.now();
-
-  // ✔ Cached (memory / session) hit
-  if (state.TTL > 0 && state.data && now - state.lastFetch < state.TTL) {
-    console.log("%c📦 Optimaio Campaign (cached)", "color:#2196f3", state.data);
-    return state.data;
+      .then(res => res.json())
+      {% comment %} .then(json => {
+        state.data = json;
+        state.lastFetch = Date.now();
+  
+        console.log(
+          `%c⚡ Optimaio Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
+          "color:#4caf50",
+          json
+        );
+  
+        state.pending = null;
+        return json;
+      }) {% endcomment %}
+      .then(json => {
+        const normalized = normalizeCampaignResponse(json);
+      
+        state.data = normalized;
+        state.lastFetch = Date.now();
+      
+        console.log(
+          `%c⚡ Optimaio Fetch (normalized): ${Math.round(performance.now() - start)}ms`,
+          "color:#4caf50",
+          normalized
+        );
+      
+        state.pending = null;
+        return normalized;
+      })
+      
+      .catch(err => {
+        console.warn("⚠️ Optimaio Fetch Failed", err);
+        state.pending = null;
+        throw err;
+      });
+  
+    return state.pending;
   }
-
-  // ✔ Fetch fresh
-  return fetchCampaignFresh();
-};
-
-
-/* ----------------------------------------------------
-   OPTIONAL AUTO REFRESH TIMER
----------------------------------------------------- */
-const AUTO_REFRESH_TIMER = 0; // 0 = off
-
-if (AUTO_REFRESH_TIMER > 0) {
-  setInterval(() => {
-    console.log("%c🔄 Auto-refreshing campaign (timer)", "color: orange");
-    fetchCampaignFresh();
-  }, AUTO_REFRESH_TIMER);
-}
-
-
-/* ----------------------------------------------------
-   🚀 PREFETCH IMMEDIATELY (warm cache early)
----------------------------------------------------- */
-window.__OPTIMIAO_PREFETCH__ = fetchCampaignFresh().catch(() => null);
-
-</script>
+  
+  
+  /* ----------------------------------------------------
+     PUBLIC FUNCTION USED BY ALL SECTIONS
+  ---------------------------------------------------- */
+  window.getCampaignData = async function() {
+    const state = window.__OPTIMIAO_FETCH_STATE__;
+    const now = Date.now();
+  
+    // ✔ In-memory cache hit
+    if (
+      state.TTL > 0 &&
+      state.data &&
+      now - state.lastFetch < state.TTL
+    ) {
+      console.log("%c📦 Optimaio Campaign (memory cache)", "color:#2196f3", state.data);
+      return state.data;
+    }
+  
+    // ✔ Fetch fresh
+    return fetchCampaignFresh();
+  };
+  
+  
+  /* ----------------------------------------------------
+     🚀 OPTIONAL PREFETCH (still memory-only)
+  ---------------------------------------------------- */
+  window.__OPTIMIAO_PREFETCH__ = fetchCampaignFresh().catch(() => null);
+  
+  </script>
+  
 
  
 
@@ -377,6 +357,12 @@ if (AUTO_REFRESH_TIMER > 0) {
 {{ 'optimaio-theme-minimal.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme-cool.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme-dark.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-demo-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme5-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme6-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme7-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme8-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme9-color.css' | asset_url | stylesheet_tag }}
 
 <script>
   (function () {
@@ -435,9 +421,9 @@ if (AUTO_REFRESH_TIMER > 0) {
       const colors = settings.colors || {};
       const variableMap = {
         buttonColor: "--btn-bg",
-        primaryColor: "--accent-color",
+        primaryColor: "--accent",
         secondaryColor: "--header-bg",
-        progressStart: "--progress-active",
+        progressStart: "--accent",
         progressEnd: "--progress-inactive"
       };
   
@@ -503,19 +489,26 @@ if (AUTO_REFRESH_TIMER > 0) {
   <!-- Header -->
   <div class="optimaio-cart-drawer__header">
     <h2 class="optimaio-cart-tile">My Cart</h2>
-    <button type="button" class="optimaio-cart-drawer__close">×</button>
+    <button type="button" class="optimaio-cart-drawer__close"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18"/>
+      <path d="M6 6 18 18"/>
+      </svg></button>
   </div>
   
 
-  <div id="optimaio-countdown" class="optimaio-countdown">
-  <span class="optimaio-countdown-label">⏳ Offer ends in</span>
-  <span id="optimaio-countdown-time">
-    <span class="optimaio-time"><strong>00</strong>d</span>
-    <span class="optimaio-time"><strong>00</strong>h</span>
-    <span class="optimaio-time"><strong>00</strong>m</span>
-    <span class="optimaio-time"><strong>00</strong>s</span>
-  </span>
-</div>
+  <div id="optimaio-countdown" class="optimaio-countdown" style="display:none;">
+    <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 7v5l3 2"/>
+      </svg>
+    <span class="optimaio-countdown-label"> Offer ends in</span>
+    <span id="optimaio-countdown-time">
+      <span class="optimaio-time"><strong>00</strong>d :</span>
+      <span class="optimaio-time"><strong>00</strong>h :</span>
+      <span class="optimaio-time"><strong>00</strong>m :</span>
+      <span class="optimaio-time"><strong>00</strong>s</span>
+    </span>
+  </div>
 
  
   <!-- Middle Scrollable Body -->
@@ -526,6 +519,7 @@ if (AUTO_REFRESH_TIMER > 0) {
     {% comment %} <div class="optimaio-cart-drawer-border-radius"> {% endcomment %}
     <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
      {% comment %} </div> {% endcomment %}
+     
 
      {% render 'optimaio-progress-bar' %}
 
@@ -591,8 +585,18 @@ if (AUTO_REFRESH_TIMER > 0) {
  
   <!-- Footer Tabs -->
   <div class="optimaio-cart-drawer__footer">
-    <button class="optimaio-tab-btn active" data-target="cart">🛒 Cart</button>
-    <button class="optimaio-tab-btn" data-target="offers">🎁 Offers</button>
+    <button class="optimaio-tab-btn active" data-target="cart"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="21" r="1"/>
+      <circle cx="19" cy="21" r="1"/>
+      <path d="M2 2h3l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L23 6H6"/>
+      </svg> Cart</button>
+    <button class="optimaio-tab-btn" data-target="offers"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 12v10H4V12"/>
+      <path d="M2 7h20v5H2z"/>
+      <path d="M12 22V7"/>
+      <path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C10 2 12 7 12 7z"/>
+      <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7z"/>
+      </svg> Offers</button>
   </div>
 </div>
  
@@ -602,10 +606,16 @@ if (AUTO_REFRESH_TIMER > 0) {
     const data = window.__OPTIMAIO_CART__ || {};
     const timer = data.timer;
   
-    if (!timer || timer.status !== "active") return;
-  
     const container = document.getElementById("optimaio-countdown");
-    if (!container) return;
+
+if (!timer || timer.status !== "active") {
+  if (container) container.remove();
+  return;
+}
+
+// ✅ ADD THIS LINE
+container.style.display = "flex";
+
   
     const boxes = container.querySelectorAll(".optimaio-time strong");
     if (boxes.length !== 4) return;

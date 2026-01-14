@@ -1,40 +1,27 @@
-/* =====================================================
-   OPTIMAIO CART DRAWER - THEME: THEME3 (DARK)
-   Elegant dark mode theme with pink-red accents
-===================================================== */
-
 #optimaio-cart-drawer[data-optimaio-theme="theme3"] {
   /* ---------- Base Colors ---------- */
-  --drawer-bg: #0e0e0e;          /* darker background for overall drawer */
-  --card-bg: #505050;            /* slightly lighter card for contrast */
-  --header-bg: #1c1c1e;
-  --summary-bg: #1c1c1e;
-  --footer-bg: #1c1c1e;
-
-  --border-color: #2a2a2a;
-  --scrollbar-thumb: #444;
+  --bg-primary: #fff7fa;
+  --bg-secondary: #ffeaf2;
+  --bg-soft: #ffd6e6;
 
   /* ---------- Text Colors ---------- */
-  --text-color: #f3f3f3;          /* bright readable text */
-  --text-muted: #b5b5b5;          /* softer gray for secondary text */
+  --text-primary: #2a0f1a;
+  --text-secondary: #7a3b52;
+  --text-muted: #a66a80;
 
-  /* ---------- Buttons ---------- */
-  --btn-bg: #ff4d4d;              /* vibrant red for high visibility */
-  --btn-color: #ffffff;
+  /* ---------- Borders & Shadow ---------- */
+  --border: #f3c1d3;
+  --shadow: rgba(0,0,0,0.10);
 
   /* ---------- Accents ---------- */
-  --accent-color: #ff7676;        /* soft pink-red */
+  --accent: #e11d48;
+  --accent-soft: rgba(225,29,72,0.14);
+  --accent-contrast: #ffffff;
 
-  /* ---------- Alerts / Progress ---------- */
-  --alert-bg: #2a1313;
-  --alert-text: #ff7676;
-  --progress-active: #ff7676;
-  --progress-inactive: #c7bbbb;
+
+  /* ---------- Progress ---------- */
+  --progress-inactive: #f1b6cb;
 
   /* ---------- Discounts ---------- */
-  --discount-bg: #2a1313;
-  --discount-text: #ff7676;
-
-  /* ---------- Spinner ---------- */
-  --spinner-color: #ff7676;
+  --discount-text: #9f1239;
 }

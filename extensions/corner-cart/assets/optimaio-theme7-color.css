@@ -1,0 +1,29 @@
+#optimaio-cart-drawer[data-optimaio-theme="theme7"] {
+    /* ---------- Base Colors ---------- */
+    --bg-primary: #0b1220;
+    --bg-secondary: #101b2e;
+    --bg-soft: #15233b;
+  
+    /* ---------- Text Colors ---------- */
+    --text-primary: #ffffff;
+    --text-secondary: #b7c2d6;
+    --text-muted: #7f8aa3;
+  
+    /* ---------- Borders & Shadow ---------- */
+    --border: rgba(255,255,255,0.08);
+    --shadow: rgba(0,0,0,0.45);
+  
+    /* ---------- Accents ---------- */
+    --accent: #22d3ee;
+    --accent-soft: rgba(34,211,238,0.16);
+    --accent-contrast: #081018;
+  
+
+  
+    /* ---------- Progress ---------- */
+    --progress-inactive: rgba(255,255,255,0.18);
+  
+    /* ---------- Discounts ---------- */
+    --discount-text: #5eead4;
+  }
+  
