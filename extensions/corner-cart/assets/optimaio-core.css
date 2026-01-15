@@ -255,7 +255,6 @@ body.optimaio-cart-open {
 }
 
 
-
 /* Label below icon */
 .optimaio-milestone-label {
   font-size: 11px;
@@ -363,11 +362,26 @@ body.optimaio-cart-open {
 }
 
 .optimaio-qty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 20px;
+
   background: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border);
   border-radius: 4px;
+  padding: 0;
 }
+.optimaio-qty-btn svg {
+  width: 16px;
+  height: 14px;
+  stroke-width: 2;
+  display: block; /* critical */
+}
+
 
 .optimaio-cart-item__qty {
   font-size: 15px;
@@ -389,6 +403,16 @@ body.optimaio-cart-open {
   padding: 4px 6px;
   border-radius: 4px;
   display: inline-block;
+}
+
+.optimaio-cart-item__discount span {
+  display: inline-flex;
+  gap: 6px;
+}
+.optimaio-cart-item__discount svg {
+  width: 18px;
+  height: 18px;
+  display: block; /* IMPORTANT */
 }
 
 /* ========== Buttons & Loading States ========== */
@@ -474,8 +498,8 @@ body.optimaio-cart-open {
   margin: 2px 0;
 }
 .optimaio-rec-add {
-  background: var(--btn-bg);
-  color: var(--btn-color);
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   padding: 6px 10px;
   border-radius: 4px;
