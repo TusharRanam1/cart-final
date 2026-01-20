@@ -156,38 +156,31 @@
   /* -----------------------------------------------------------
         FREE GIFT POPUP (Created once using requestIdleCallback)
   ----------------------------------------------------------- */
-  requestIdleCallback(() => {
-    if (document.getElementById("optimaio-gift-popup")) return;
+  const cartDrawer =
+  document.querySelector("#optimaio-cart-drawer") ||
+  document.querySelector(".optimaio-cart-drawer");
 
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      `
-      <div id="optimaio-gift-popup" class="optimaio-gift-popup" style="display:none;">
-        <div class="optimaio-gift-popup__inner">
-          <h3>🎁 Choose Your Free Gifts</h3>
-          <p>Select up to <span id="optimaio-max-gifts">1</span> gifts:</p>
-          <div id="optimaio-gift-options"></div>
-          <p id="optimaio-gift-error" style="color:#c00;font-size:13px;display:none;"></p>
-          <div class="optimaio-gift-popup__actions">
-            <button id="optimaio-cancel-gifts" class="optimaio-btn optimaio-btn--light">Cancel</button>
-            <button id="optimaio-confirm-gifts" class="optimaio-btn">Confirm</button>
-          </div>
-        </div>
+if (!cartDrawer) return;
+
+cartDrawer.insertAdjacentHTML(
+  "beforeend",
+  `
+  <div id="optimaio-gift-popup" class="optimaio-gift-popup" style="display:none;">
+    <div class="optimaio-gift-popup__backdrop"></div>
+    <div class="optimaio-gift-popup__inner">
+      <h3>🎁 Choose Your Free Gifts</h3>
+      <p>Select up to <span id="optimaio-max-gifts">1</span> gifts:</p>
+      <div id="optimaio-gift-options"></div>
+      <p id="optimaio-gift-error" style="color:#c00;font-size:13px;display:none;"></p>
+      <div class="optimaio-gift-popup__actions">
+        <button id="optimaio-cancel-gifts" class="optimaio-btn optimaio-btn--light">Cancel</button>
+        <button id="optimaio-confirm-gifts" class="optimaio-btn">Confirm</button>
       </div>
-      `
-    );
+    </div>
+  </div>
+  `
+);
 
-    const style = document.createElement("style");
-    style.textContent = `
-      .optimaio-gift-popup{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:12000;}
-      .optimaio-gift-popup__inner{background:#fff;padding:20px;border-radius:16px;width:90%;max-width:420px;text-align:center;}
-      .optimaio-gift-option{display:inline-block;margin:10px;cursor:pointer;border:2px solid transparent;border-radius:10px;padding:6px;background:#fff7f8;width:120px;}
-      .optimaio-gift-option.selected{border-color:#d48b8b;background:#fdeaea;}
-      .optimaio-btn{background:#000;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;margin:8px;cursor:pointer;}
-      .optimaio-btn--light{background:#eee;color:#333;}
-    `;
-    document.head.appendChild(style);
-  });
 
   /* -----------------------------------------------------------
         FREE GIFT: POPUP HANDLER
@@ -205,16 +198,33 @@
     error.style.display = "none";
 
     container.innerHTML = products
-      .map(p => {
-        const vid = Number(p.id.split("/").pop());
-        return `
-        <div class="optimaio-gift-option" data-id="${vid}">
-          <img src="${p.image?.url || p.featured_image || ""}" width="80" height="80">
-          <p>${p.productTitle || p.title}</p>
+  .map(p => {
+    const vid = Number(p.id.split("/").pop());
+    const productName = p.productTitle || "";
+    const variantName =
+      p.title && p.title !== "Default Title" ? p.title : "";
+
+    return `
+      <div class="optimaio-gift-option" data-id="${vid}">
+        <img
+          src="${p.image?.url || ""}"
+          width="48"
+          height="48"
+        />
+
+        <div class="optimaio-gift-info">
+          <p class="optimaio-gift-title">${productName}</p>
+          ${
+            variantName
+              ? `<p class="optimaio-gift-variant">${variantName}</p>`
+              : ""
+          }
         </div>
-      `;
-      })
-      .join("");
+      </div>
+    `;
+  })
+  .join("");
+
 
     popup.style.display = "flex";
     window.__optimaioPopupOpen = true;
@@ -282,16 +292,33 @@
     error.style.display = "none";
 
     container.innerHTML = products
-      .map(p => {
-        const vid = Number(p.id.split("/").pop());
-        return `
-        <div class="optimaio-gift-option" data-id="${vid}">
-          <img src="${p.image?.url || p.featured_image || ""}" width="80">
-          <p>${p.productTitle || p.title}</p>
+  .map(p => {
+    const vid = Number(p.id.split("/").pop());
+    const productName = p.productTitle || "";
+    const variantName =
+      p.title && p.title !== "Default Title" ? p.title : "";
+
+    return `
+      <div class="optimaio-gift-option" data-id="${vid}">
+        <img
+          src="${p.image?.url || ""}"
+          width="48"
+          height="48"
+        />
+
+        <div class="optimaio-gift-info">
+          <p class="optimaio-gift-title">${productName}</p>
+          ${
+            variantName
+              ? `<p class="optimaio-gift-variant">${variantName}</p>`
+              : ""
+          }
         </div>
-      `;
-      })
-      .join("");
+      </div>
+    `;
+  })
+  .join("");
+
 
     popup.style.display = "flex";
     window.__optimaioPopupOpen = true;

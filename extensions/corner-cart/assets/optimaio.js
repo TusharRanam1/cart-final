@@ -363,7 +363,13 @@ function formatShopMoney(amountInCents) {
       emptyState.style.display = "none";
  
       const itemsHTML = cart.items.map(item => `
-        <div class="optimaio-cart-item-card ${item.properties?.isBXGYGift ? 'optimaio-free-gift' : ''}">
+        <div
+  class="optimaio-cart-item-card
+    ${(item.properties?.isBXGYGift || item.properties?.isFreeGift) ? 'optimaio-free-gift' : ''}"
+  ${item.properties?.isFreeGift ? 'data-is-free-gift="true"' : ''}
+  ${item.properties?.isBXGYGift ? 'data-is-bxgy-gift="true"' : ''}
+>
+
           <div class="optimaio-cart-item__image"><img src="${item.image}" alt="${item.product_title}"></div>
           <div class="optimaio-cart-item__info">
  
@@ -478,7 +484,10 @@ function formatShopMoney(amountInCents) {
       discountEl.textContent =
   "-" + formatShopMoney(cart.original_total_price - cart.total_price);
  
-      if (cart.items.length) loadRecs(cart.items[0].product_id);
+  if (cart.items.length) {
+    loadRecsForCart(cart.items);
+  }
+  
       bindItemButtons();
  
       if (cart.items.some(i => i.properties?.isBXGYGift || i.properties?.isFreeGift)) {
@@ -521,41 +530,63 @@ document.addEventListener("optimaio:cart:refresh", async () => {
        QTY + REMOVE BUTTONS
     ------------------------------ */
     function bindItemButtons() {
-      itemsContainer.querySelectorAll(".optimaio-qty-btn").forEach(btn => {
-        btn.onclick = async () => {
-          const key = btn.dataset.key;
-          const delta = parseInt(btn.dataset.change);
-          const qtyEl = btn.parentElement.querySelector(".optimaio-cart-item__qty");
-          const newQty = Math.max(1, parseInt(qtyEl.textContent) + delta);
- 
-          btn.disabled = true;
- 
-          await fetch("/cart/change.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: key, quantity: newQty })
-          })
-            .then(res => res.json().catch(() => getCart()))
-            .then(cart => renderCart(cart))
-            .finally(() => btn.disabled = false);
-        };
-      });
- 
-      itemsContainer.querySelectorAll(".optimaio-cart-item__remove").forEach(btn => {
-        btn.onclick = async () => {
-          btn.disabled = true;
- 
-          await fetch("/cart/change.js", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: btn.dataset.key, quantity: 0 })
-          })
-            .then(res => res.json())
-            .then(cart => renderCart(cart))
-            .finally(() => btn.disabled = false);
-        };
-      });
-    }
+
+
+      itemsContainer
+  .querySelectorAll(".optimaio-cart-item__remove")
+  .forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = "true";
+
+    btn.onclick = async () => {
+      const key = btn.dataset.key;
+      btn.disabled = true;
+
+      await fetch("/cart/change.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: key, quantity: 0 })
+      })
+      .then(() => window.OptimaioCartController.refresh())
+
+        .finally(() => btn.disabled = false);
+    };
+  });
+
+
+  /* ------------------------------
+     QTY BUTTONS — ❌ SKIP GIFTS
+  ------------------------------ */
+  itemsContainer.querySelectorAll(".optimaio-cart-item-card").forEach(card => {
+
+    const isGift =
+      card.dataset.isFreeGift === "true" ||
+      card.dataset.isBxgyGift === "true";
+
+    if (isGift) return; // ⛔ STOP — no qty logic for gifts
+
+    card.querySelectorAll(".optimaio-qty-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const key = btn.dataset.key;
+        const delta = parseInt(btn.dataset.change);
+        const qtyEl = btn.parentElement.querySelector(".optimaio-cart-item__qty");
+        const newQty = Math.max(1, parseInt(qtyEl.textContent) + delta);
+
+        btn.disabled = true;
+
+        await fetch("/cart/change.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: key, quantity: newQty })
+        })
+        .then(() => window.OptimaioCartController.refresh())
+          .finally(() => btn.disabled = false);
+      };
+    });
+  });
+
+}
+
 
     /* ------------------------------
    CHECKOUT BUTTON INTERCEPT
@@ -723,76 +754,96 @@ function initAutoScrollRecommendations(startIndex = 0) {
 /* ------------------------------------------------------
    LOAD RECOMMENDATIONS + MAINTAIN POSITION
 ------------------------------------------------------*/
-async function loadRecs(productId) {
+async function loadRecsForCart(cartItems) {
   const container = document.querySelector(".optimaio-recommendations-list");
   if (!container) return;
- 
-  // Save current card before rebuild
-  const currentIndex = getCurrentCardIndex(container);
- 
-  // Fetch new recommendations
-  const res = await fetch(
-    `/recommendations/products.json?product_id=${productId}&intent=complementary&limit=4`
-  );
-  const data = await res.json();
- 
+
   const section = document.querySelector(".optimaio-cart-drawer__recommendations");
- 
-// Hide when no products
-if (!data.products.length) {
-  container.innerHTML = "";
-  if (section) section.style.display = "none";
-  return;
-}
- 
-// Show when products exist
-if (section) section.style.display = "";
- 
- 
-  /* --------------------------
-     BUILD HTML
-  --------------------------*/
-  container.innerHTML = data.products.map(p => `
+  if (section && !section.querySelector("p")) {
+    section.insertAdjacentHTML(
+      "afterbegin",
+      '<p class="optimaio-reco-title">You might also like</p>'
+    );
+  }
+  
+
+  // Keep scroll position
+  const currentIndex = getCurrentCardIndex(container);
+
+  // Products already in cart (exclude these)
+  const cartProductIds = new Set(cartItems.map(i => i.product_id));
+
+  // Fetch recommendations for ALL cart products
+  const responses = await Promise.all(
+    cartItems.map(item =>
+      fetch(
+        `/recommendations/products.json?product_id=${item.product_id}&intent=complementary&limit=4`
+      ).then(r => r.json())
+    )
+  );
+
+  // Merge + dedupe + exclude cart items
+  const merged = [];
+  const seen = new Set();
+
+  responses.forEach(r => {
+    r.products.forEach(p => {
+      if (cartProductIds.has(p.id)) return; // ❌ already in cart
+      if (seen.has(p.id)) return;           // ❌ duplicate
+      seen.add(p.id);
+      merged.push(p);
+    });
+  });
+
+  // Hide section if nothing valid
+  if (!merged.length) {
+    container.innerHTML = "";
+    if (section) section.style.display = "none";
+    return;
+  }
+
+  if (section) section.style.display = "";
+
+  // Render
+  container.innerHTML = merged.map(p => `
     <div class="optimaio-recommendation-card">
       <div class="optimaio-rec-image">
         <img src="${p.featured_image}" alt="${p.title}">
       </div>
- 
+
       <div class="optimaio-rec-content">
         <p class="optimaio-rec-title">${p.title}</p>
-        <p class="optimaio-rec-price">${formatShopMoney(p.variants[0].price)}</p>
+        <p class="optimaio-rec-price">
+          ${formatShopMoney(p.variants[0].price)}
+        </p>
       </div>
- 
+
       <button class="optimaio-rec-add" data-id="${p.variants[0].id}">
         Add
       </button>
     </div>
   `).join("");
- 
-  /* --------------------------
-     ADD-TO-CART BUTTONS
-  --------------------------*/
+
+  // Bind ATC
   container.querySelectorAll(".optimaio-rec-add").forEach(btn => {
     btn.onclick = async () => {
       btn.disabled = true;
- 
+
       await fetch("/cart/add.js", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: btn.dataset.id, quantity: 1 })
-      })
-      .then(() => window.OptimaioCartController.refresh())
- 
-      .finally(() => btn.disabled = false);
+      });
+
+      window.OptimaioCartController.refresh();
+      btn.disabled = false;
     };
   });
- 
-  /* --------------------------
-     RESTART AUTO SCROLL
-     FROM SAME CARD
-  --------------------------*/
+
+  // Restart auto-scroll
   initAutoScrollRecommendations(currentIndex);
 }
+
  
  
     /* ------------------------------

@@ -478,6 +478,7 @@ if (AUTO_REFRESH_TIMER > 0) {
 </script>
 
 
+  
  
 <!-- Optimaio Universal Responsive Cart Drawer -->
 <div id="optimaio-corner-cart">
@@ -494,6 +495,25 @@ if (AUTO_REFRESH_TIMER > 0) {
       <path d="M6 6 18 18"/>
       </svg></button>
   </div>
+
+
+  <div class="optimaio-announcement-bar">
+    <div class="optimaio-announcement-viewport">
+      <div class="optimaio-announcement-item active">
+        Don’t miss out! Claim your free gifts below 🎁
+      </div>
+      <div class="optimaio-announcement-item">
+        Add more items to unlock exclusive rewards ✨
+      </div>
+      <div class="optimaio-announcement-item">
+        Limited-time offers available in your cart ⏰
+      </div>
+    </div>
+  </div>
+  
+  
+  
+  
   
 
   <div id="optimaio-countdown" class="optimaio-countdown" style="display:none;">
@@ -554,10 +574,7 @@ if (AUTO_REFRESH_TIMER > 0) {
         <a href="/" class="optimaio-continue-btn">Continue Shopping</a>
       </div>
  
-      <div class="optimaio-cart-drawer__recommendations">
-        <h3>You might also like</h3>
-        <div class="optimaio-recommendations-list"></div>
-      </div>
+      
     </div>
  
     <!-- TAB: OFFERS -->
@@ -565,9 +582,29 @@ if (AUTO_REFRESH_TIMER > 0) {
       {% render 'optimaio-offers' %}
     </div>
   </div>
+
+  <div class="optimaio-cart-drawer__recommendations">
+    <div class="optimaio-recommendations-list"></div>
+  </div>
+
+  
  
   <!-- Footer Summary -->
   <div class="optimaio-cart-drawer__summary-checkout">
+    <div class="optimaio-cart-actions">
+
+      <button class="optimaio-action-btn" data-sheet="note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen-icon lucide-notebook-pen"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+        Add note
+      </button>
+    
+      <button class="optimaio-action-btn" data-sheet="discount">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket-percent-icon lucide-ticket-percent"><path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/></svg> 
+        Discount
+      </button>
+    
+    </div>
+    
     <div class="optimaio-cart-drawer__summary">
       <div class="optimaio-discount-row">
         <span class="optimaio-discount-label">Discount:</span>
@@ -598,8 +635,170 @@ if (AUTO_REFRESH_TIMER > 0) {
       <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7z"/>
       </svg> Offers</button>
   </div>
+
+  <div class="optimaio-bottom-sheet" id="optimaio-sheet">
+
+    <div class="optimaio-sheet-header">
+      <span id="optimaio-sheet-title"></span>
+      <button class="optimaio-sheet-close">✕</button>
+    </div>
+  
+    <div class="optimaio-sheet-body">
+  
+      <!-- NOTE -->
+      <div class="optimaio-sheet-content" data-content="note">
+        <textarea
+          class="optimaio-note-textarea"
+          placeholder="Special instructions for seller"
+        ></textarea>
+  
+        <button class="optimaio-sheet-primary">
+          Save
+        </button>
+      </div>
+  
+      <!-- DISCOUNT -->
+      <div class="optimaio-sheet-content" data-content="discount">
+        <div class="optimaio-discount-field">
+          <input
+            type="text"
+            class="optimaio-discount-input"
+            placeholder="Enter discount code"
+          />
+          <button class="optimaio-discount-apply">
+            Apply
+          </button>
+        </div>
+      </div>
+  
+    </div>
+  </div>
+  
 </div>
  
+<script>
+  (function () {
+    const sheet = document.getElementById("optimaio-sheet");
+    const title = document.getElementById("optimaio-sheet-title");
+  
+    if (!sheet) return;
+  
+    /* -----------------------------
+       OPEN SHEET
+    ----------------------------- */
+    document.addEventListener("click", e => {
+      const actionBtn = e.target.closest(".optimaio-action-btn");
+      if (!actionBtn) return;
+  
+      const type = actionBtn.dataset.sheet;
+  
+      // Set title
+      title.textContent =
+        type === "note"
+          ? "Add note for seller"
+          : "Apply discount code";
+  
+      // Show correct content
+      sheet.querySelectorAll(".optimaio-sheet-content").forEach(c => {
+        c.classList.toggle("active", c.dataset.content === type);
+      });
+  
+      sheet.classList.add("open");
+    });
+  
+    /* -----------------------------
+       CLOSE SHEET
+    ----------------------------- */
+    function closeSheet() {
+      sheet.classList.remove("open");
+    }
+  
+    document.addEventListener("click", e => {
+      if (e.target.closest(".optimaio-sheet-close")) {
+        closeSheet();
+      }
+    });
+  
+    /* -----------------------------
+       SAVE NOTE (REAL SHOPIFY)
+    ----------------------------- */
+    document.addEventListener("click", async e => {
+      const saveBtn = e.target.closest(".optimaio-sheet-primary");
+      if (!saveBtn) return;
+  
+      const textarea = sheet.querySelector(".optimaio-note-textarea");
+      if (!textarea) return;
+  
+      saveBtn.disabled = true;
+  
+      try {
+        await fetch("/cart/update.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note: textarea.value })
+        });
+  
+        // Refresh cart UI safely
+        window.OptimaioCartController?.refresh();
+  
+        closeSheet(); // ✅ FIXED: closes popup
+  
+      } catch (err) {
+        console.error("Failed to save note", err);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  
+    /* -----------------------------
+       APPLY DISCOUNT (REAL SHOPIFY)
+    ----------------------------- */
+    document.addEventListener("click", e => {
+      const applyBtn = e.target.closest(".optimaio-discount-apply");
+      if (!applyBtn) return;
+  
+      const input = sheet.querySelector(".optimaio-discount-input");
+      if (!input || !input.value.trim()) return;
+  
+      applyBtn.disabled = true;
+  
+      // Official Shopify method
+      window.location.href =
+        "/discount/" + encodeURIComponent(input.value.trim());
+    });
+
+    
+  
+  })();
+  </script>
+  <script>
+    fetch("/cart.js")
+  .then(r => r.json())
+  .then(cart => console.log(cart.note));
+
+  </script>
+  
+<script>
+  (function () {
+    const items = document.querySelectorAll(".optimaio-announcement-item");
+    if (items.length <= 1) return;
+  
+    let index = 0;
+  
+    // Init
+    items.forEach((el, i) => {
+      el.classList.toggle("active", i === 0);
+    });
+  
+    setInterval(() => {
+      items[index].classList.remove("active");
+      index = (index + 1) % items.length;
+      items[index].classList.add("active");
+    }, 4000);
+  })();
+  </script>
+  
+
 
 <script>
   (function () {

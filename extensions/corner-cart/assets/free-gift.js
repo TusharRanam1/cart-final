@@ -97,6 +97,8 @@ async function parseCampaignData() {
   // 🎨 POPUP (deferred creation)
   // ----------------------------
   requestIdleCallback(() => {
+    if (document.getElementById("optimaio-gift-popup")) return;
+  
     const popupHTML = `
       <div id="optimaio-gift-popup" class="optimaio-gift-popup" style="display:none;">
         <div class="optimaio-gift-popup__inner">
@@ -109,25 +111,18 @@ async function parseCampaignData() {
             <button id="optimaio-confirm-gifts" class="optimaio-btn">Confirm</button>
           </div>
         </div>
-      </div>`;
-    if (!document.getElementById("optimaio-gift-popup"))
-      document.body.insertAdjacentHTML("beforeend", popupHTML);
-
-    const style = document.createElement("style");
-    style.textContent = `
-      .optimaio-gift-popup{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:11000;font-family:Inter,sans-serif;}
-      .optimaio-gift-popup__inner{background:#fff;padding:20px;border-radius:16px;width:90%;max-width:420px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.25);}
-      .optimaio-gift-option{display:inline-block;margin:10px;cursor:pointer;border:2px solid transparent;border-radius:10px;padding:6px;background:#fff7f8;width:120px;transition:all .2s;}
-      .optimaio-gift-option img{width:80px;height:80px;border-radius:8px;object-fit:cover;}
-      .optimaio-gift-option p{font-size:13px;font-weight:500;color:#222;margin:6px 0 0;}
-      .optimaio-gift-option:hover{border-color:#f1b0b0;transform:translateY(-2px);}
-      .optimaio-gift-option.selected{border-color:#d48b8b;background:#fdeaea;}
-      .optimaio-btn{background:#000;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;margin:8px;}
-      .optimaio-btn--light{background:#eee;color:#333;}
-      .optimaio-gift-popup__actions{display:flex;justify-content:center;gap:10px;margin-top:12px;}
+      </div>
     `;
-    document.head.appendChild(style);
+  
+    const cartDrawer =
+      document.querySelector("#optimaio-cart-drawer") ||
+      document.querySelector(".optimaio-cart-drawer");
+  
+    if (!cartDrawer) return;
+  
+    cartDrawer.insertAdjacentHTML("beforeend", popupHTML);
   });
+  
 
   // ----------------------------
   // 🪄 POPUP HANDLER

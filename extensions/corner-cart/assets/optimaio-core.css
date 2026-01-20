@@ -5,16 +5,17 @@
 
 .optimaio-countdown {
   background: var(--bg-secondary);
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
   display: flex;
-  margin: 0 auto;
-  width: max-content;
+  margin: 0 12px;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .optimaio-countdown-label {
@@ -49,6 +50,7 @@
   box-sizing: border-box;
 }
 
+
 body.optimaio-cart-open {
   position: fixed;
   width: 100%;
@@ -65,7 +67,7 @@ body.optimaio-cart-open {
 }
 
 #optimaio-cart-drawer{
-  gap: 8px;
+  gap: 6px;
 }
 /* ========== Corner Cart Button ========== */
 #optimaio-corner-cart {
@@ -112,7 +114,7 @@ body.optimaio-cart-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 12px 12px 0px;
   /* border-bottom: 1px solid var(--border); */
   background: transparent;
   position: sticky;
@@ -140,12 +142,21 @@ body.optimaio-cart-open {
 
 /* ========== Drawer Middle Scroll Area ========== */
 .optimaio-cart-drawer__middle {
-  flex: 1;
+  flex-grow: 1;
   overflow-y: auto;
-  padding: 0 8px 0 14px;
+  margin: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE / Edge */
+
+  /* ✅ SHADOW */
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 .optimaio-cart-drawer__middle::-webkit-scrollbar {
-  width: 6px;
+  display: none;
+  /* width: 6px; */
 }
 .optimaio-cart-drawer__middle::-webkit-scrollbar-thumb {
   background: var(--bg-soft);
@@ -162,7 +173,7 @@ body.optimaio-cart-open {
      display: block;
     padding: 6px 0;
     background-color: var(--bg-secondary);
-    border: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     /* margin: 6px 12px;
     border-radius: 10px; */
 }
@@ -291,7 +302,7 @@ body.optimaio-cart-open {
   display: flex;
   gap: 12px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   /* border-radius: 10px; */
   padding: 12px;
   position: relative;
@@ -338,7 +349,7 @@ body.optimaio-cart-open {
 .optimaio-cart-item__variant {
   font-size: 12px;
   color: var(--text-muted);
-  margin: 2px 0 6px;
+  margin: 0;
 }
 .optimaio-cart-item__bottom {
   display: flex;
@@ -361,6 +372,12 @@ body.optimaio-cart-open {
   color: var(--text-primary);
 }
 
+.optimaio-cart-item__actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .optimaio-qty-btn {
   display: inline-flex;
   align-items: center;
@@ -378,10 +395,17 @@ body.optimaio-cart-open {
 .optimaio-qty-btn svg {
   width: 16px;
   height: 14px;
+  stroke: currentColor;
   stroke-width: 2;
   display: block; /* critical */
 }
 
+/* ✅ Hover */
+.optimaio-qty-btn:hover {
+  background-color: var(--accent);        /* icon color */
+  color: var(--accent-contrast); 
+  border-color: var(--accent-contrast);/* border color */
+}
 
 .optimaio-cart-item__qty {
   font-size: 15px;
@@ -443,6 +467,17 @@ body.optimaio-cart-open {
 }
 
 /* ========== Recommendations ========== */
+
+.optimaio-cart-drawer__recommendations {
+  padding: 0 12px;
+  margin: 0 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+
 .optimaio-recommendations-list {
   display: flex;
   overflow-x: auto;
@@ -451,20 +486,35 @@ body.optimaio-cart-open {
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  /* Hide scrollbar — Firefox */
+  scrollbar-width: none;
+
+  /* Hide scrollbar — IE/Edge (legacy) */
+  -ms-overflow-style: none;
 }
+
+/* Hide scrollbar — Chrome / Safari */
 .optimaio-recommendations-list::-webkit-scrollbar {
-  height: 6px;              /* slim */
+  display: none;
+}
+
+/* .optimaio-recommendations-list::-webkit-scrollbar {
+  height: 6px;             
 }
 
 .optimaio-recommendations-list::-webkit-scrollbar-track {
-  background: transparent; /* no track row */
+  background: transparent; 
 }
 
   .optimaio-recommendations-list::-webkit-scrollbar-thumb {
     background: rgba(0,0,0,0.35);
     border-radius: 6px;
+  } */
+  .optimaio-reco-title {
+    font-size: 14px;
+    margin: 4px 0 0;
+    color: var(--text-muted);
   }
-
 
 .optimaio-recommendation-card {
   flex: 0 0 100%;
@@ -480,14 +530,16 @@ body.optimaio-cart-open {
 }
 
 .optimaio-rec-image img {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 6px;
   object-fit: cover;
+  display: block;
 }
 .optimaio-rec-title {
   font-size: 12px;
   font-weight: 600;
+  line-height: 16px;
   margin: 0;
   color: var(--text-primary);
 }
@@ -511,10 +563,14 @@ body.optimaio-cart-open {
 .optimaio-cart-drawer__summary-checkout {
   flex-shrink: 0;
   border-top: 1px solid var(--border);
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--bg-secondary);
-  margin: 6px 12px;
+  margin: 0 12px;
   border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+.optimaio-cart-drawer__summary {
+  line-height: 20px;
 }
 .optimaio-discount-row,
 .optimaio-total-row {
@@ -553,11 +609,12 @@ body.optimaio-cart-open {
   justify-content: space-around;
   border-top: 1px solid var(--border);
   background: var(--bg-secondary);
-  padding: 12px;
+  padding: 10px;
   position: sticky;
   bottom: 0;
   margin: 0 12px 6px;
   border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 .optimaio-cart-drawer__footer button {
   border: none;
@@ -577,9 +634,15 @@ body.optimaio-cart-open {
 
 /* ========== Tabs Control ========== */
 .optimaio-cart-tab { display: none; }
-.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart { display: block; border-radius: 16px; overflow: hidden;}
+.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart { display: block;}
 .optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-tab--offers { display: block; }
 .optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-drawer__summary-checkout { display: none; }
+.optimaio-cart-drawer[data-active-tab="offers"] #optimaio-countdown { display: none; }
+.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-announcement-bar { display: none; }
+.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-drawer__recommendations { display: none; }
+/* Hide announcement bar & timer by default */
+
+
 
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
@@ -620,8 +683,10 @@ body.optimaio-cart-open {
 .optimaio-offers-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
-  margin-top: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 10px 0;
 }
 
 .optimaio-offers-title {
@@ -633,9 +698,8 @@ body.optimaio-cart-open {
 
 .optimaio-offer-card {
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   padding: 16px;
-  border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   transition: 0.2s ease;
   display: flex;
@@ -643,10 +707,7 @@ body.optimaio-cart-open {
   align-items: center;
 }
 
-.optimaio-offer-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
+
 
 /* Left Icon */
 .optimaio-offer-left {
@@ -669,18 +730,186 @@ body.optimaio-cart-open {
 }
 
 .optimaio-offer-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   margin: 0;
   color: var(--text-primary);
 }
 
 .optimaio-offer-subtitle {
-  font-size: 14px;
-  margin: 4px 0 0;
+  font-size: 12px;
+  margin: 0;
   color: var(--text-muted);
 }
+/* ============================================================
+   OPTIMAIO GIFT POPUP — OFFER TAB STYLE PRODUCT LIST
+============================================================ */
 
+/* Popup wrapper */
+.optimaio-gift-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+}
+
+/* Popup card */
+.optimaio-gift-popup__inner {
+  position: relative;
+  width: 92%;
+  max-width: 420px;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.optimaio-gift-popup__inner h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.popup-sub-title {
+  margin: 6px 0 14px;
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  text-align: center;
+}
+
+/* Count badge */
+#optimaio-max-gifts {
+  background: var(--bg-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   PRODUCT LIST (ROW STYLE)
+============================================================ */
+
+/* ============================================================
+   PRODUCT ROW (OFFER TAB STYLE + VARIANT)
+============================================================ */
+
+#optimaio-gift-options {
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  overflow-y: auto;
+  max-height: 45vh;
+}
+
+/* Row */
+.optimaio-gift-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.optimaio-gift-option:last-child {
+  border-bottom: none;
+}
+
+
+/* Image */
+.optimaio-gift-option img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f4f4f4;
+  flex-shrink: 0;
+}
+
+/* Info wrapper */
+.optimaio-gift-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Title */
+.optimaio-gift-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+/* Variant */
+.optimaio-gift-variant {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted, #777);
+}
+
+/* Checkbox indicator */
+.optimaio-gift-option::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid #ccc;
+  margin-left: auto;
+}
+
+.optimaio-gift-option.selected::after {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+/* Error */
+#optimaio-gift-error {
+  font-size: 13px;
+  color: #c00;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ============================================================
+   ACTION BUTTONS
+============================================================ */
+
+.optimaio-gift-popup__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.optimaio-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.optimaio-btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.optimaio-btn--light {
+  background: var(--bg-soft);
+  color: var(--text-primary);
+}
+
+  
 /* Free product preview */
 .optimaio-offer-products {
   display: flex;
@@ -704,3 +933,198 @@ body.optimaio-cart-open {
   text-align: center;
   color: var(--text-muted);
 }
+
+
+.optimaio-cart-item-card[data-is-free-gift="true"] .optimaio-cart-item__actions,
+.optimaio-cart-item-card[data-is-bxgy-gift="true"] .optimaio-cart-item__actions {
+  display: none !important;
+}
+/* Free gift → price aligned right */
+.optimaio-cart-item-card[data-is-free-gift="true"] .optimaio-cart-item__bottom,
+.optimaio-cart-item-card[data-is-bxgy-gift="true"] .optimaio-cart-item__bottom {
+  justify-content: flex-end;
+}
+
+
+
+/* ================================
+   OPTIMAIO ANNOUNCEMENT — FADE (FIXED)
+================================ */
+
+.optimaio-announcement-bar {
+  margin: 0 12px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.optimaio-announcement-viewport {
+  display: grid;                 /* ⭐ key fix */
+  place-items: center;
+  min-height: 20px;
+}
+
+/* Base */
+.optimaio-announcement-item {
+  grid-area: 1 / 1;              /* stack items */
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 2s ease-in-out;
+/* slower + visible fade */
+}
+
+/* Visible */
+.optimaio-announcement-item.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ================================
+   ACTION GRID (2 buttons)
+================================ */
+
+.optimaio-cart-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.optimaio-action-btn {
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  font-size: 14px;
+  gap: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.optimaio-action-btn svg {
+  width: 16px;
+}
+
+/* ================================
+   BOTTOM SHEET
+================================ */
+
+.optimaio-bottom-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: var(--bg-primary);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.1);
+
+  transform: translateY(100%);
+  transition: transform 0.35s ease;
+  z-index: 99999;
+}
+
+/* Open */
+.optimaio-bottom-sheet.open {
+  transform: translateY(0);
+}
+
+/* ================================
+   SHEET HEADER
+================================ */
+
+.optimaio-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.optimaio-sheet-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* ================================
+   SHEET BODY
+================================ */
+
+.optimaio-sheet-body {
+  padding: 16px;
+}
+
+.optimaio-sheet-content {
+  display: none;
+}
+
+.optimaio-sheet-content.active {
+  display: block;
+}
+
+/* ================================
+   NOTE
+================================ */
+
+.optimaio-note-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.optimaio-sheet-primary {
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+/* ================================
+   DISCOUNT
+================================ */
+
+.optimaio-discount-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.optimaio-discount-input {
+  padding: 12px;
+  border: none;
+  font-size: 14px;
+}
+
+.optimaio-discount-apply {
+  padding: 0 16px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  font-weight: 700;
+}
+
+
