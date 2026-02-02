@@ -1,59 +1,109 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { log } from "./logger/logger.server";
+import { withRequestContext } from "./logger/requestContext.server";
+import { getRequestId } from "./logger/requestId.server";
 
 export const loader = async ({ request }) => {
-  try {
-    const { admin } = await authenticate.admin(request);
+  const requestId = getRequestId(request);
 
-    // 1️⃣ Get shop ID
-    const shopRes = await admin.graphql(`
-      {
-        shop {
-          id
-        }
-      }
-    `);
+  return withRequestContext({ requestId }, async () => {
+    try {
+      log.info("Fetch cart timer request received", {
+        event: "timer.fetch.received",
+      });
 
-    const shopJson = await shopRes.json();
-    const shopId = shopJson.data.shop.id;
+      const { admin, session } = await authenticate.admin(request);
+      const shop = session.shop;
 
-    // 2️⃣ Read metafield
-    const metafieldRes = await admin.graphql(`
-      {
-        shop {
-          metafield(
-            namespace: "optimaio_cart"
-            key: "cart_timer_settings"
-          ) {
+      log.info("Fetching cart timer metafield", {
+        event: "timer.fetch.start",
+        shop,
+      });
+
+      // 1️⃣ Get shop ID
+      const shopRes = await admin.graphql(`
+        {
+          shop {
             id
-            value
           }
         }
+      `);
+
+      const shopJson = await shopRes.json();
+      const shopId = shopJson?.data?.shop?.id;
+
+      if (!shopId) {
+        log.error("Shop ID not resolved for timer fetch", {
+          event: "timer.fetch.shop_missing",
+          shop,
+        });
+
+        return json({ ok: false, error: "Shop not found" }, { status: 500 });
       }
-    `);
 
-    const metafieldJson = await metafieldRes.json();
+      // 2️⃣ Read metafield
+      const metafieldRes = await admin.graphql(`
+        {
+          shop {
+            metafield(
+              namespace: "optimaio_cart"
+              key: "cart_timer_settings"
+            ) {
+              id
+              value
+            }
+          }
+        }
+      `);
 
-    const rawValue =
-      metafieldJson?.data?.shop?.metafield?.value;
+      const metafieldJson = await metafieldRes.json();
+      const rawValue = metafieldJson?.data?.shop?.metafield?.value;
 
-    if (!rawValue) {
-      return json({ ok: true, data: null });
+      if (!rawValue) {
+        log.info("Cart timer metafield not set", {
+          event: "timer.fetch.empty",
+          shop,
+        });
+
+        return json({ ok: true, data: null });
+      }
+
+      let parsedValue;
+      try {
+        parsedValue = JSON.parse(rawValue);
+      } catch (err) {
+        log.error("Failed to parse cart timer metafield JSON", {
+          event: "timer.fetch.parse_failed",
+          shop,
+          rawValue,
+        });
+
+        return json(
+          { ok: false, error: "Invalid timer configuration" },
+          { status: 500 },
+        );
+      }
+
+      log.info("Cart timer fetched successfully", {
+        event: "timer.fetch.success",
+        shop,
+      });
+
+      return json({
+        ok: true,
+        data: parsedValue,
+      });
+    } catch (err) {
+      log.error("Cart timer loader failed", {
+        event: "timer.fetch.exception",
+        error: err,
+      });
+
+      return json(
+        { ok: false, error: "Internal server error" },
+        { status: 500 },
+      );
     }
-
-    // 3️⃣ Parse JSON safely
-    const parsedValue = JSON.parse(rawValue);
-
-    return json({
-      ok: true,
-      data: parsedValue,
-    });
-  } catch (error) {
-    console.error("🔥 GET TIMER ERROR:", error);
-
-    return json(
-      { ok: false, error: error.message },
-      { status: 500 }
-    );
-  }
+  });
 };

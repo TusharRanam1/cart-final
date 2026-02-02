@@ -1,39 +1,84 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { log } from "./logger/logger.server";
+import { withRequestContext } from "./logger/requestContext.server";
+import { getRequestId } from "./logger/requestId.server";
 
 export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  const requestId = getRequestId(request);
 
-  // Fetch stored data
-  const query = `
-    query {
-      shop {
-        metafield(namespace: "optimaio_cart", key: "cart_settings") {
-          value
-        }
-      }
-    }
-  `;
-
-  const res = await admin.graphql(query);
-  const data = await res.json();
-
-  let settings = {
-    theme: "theme1",
-    bannerStyle: {},
-    colors: {},
-    customCSS: "",
-    customJS: "",
-    zIndex: "auto",
-  };
-
-  if (data?.data?.shop?.metafield?.value) {
+  return withRequestContext({ requestId }, async () => {
     try {
-      settings = JSON.parse(data.data.shop.metafield.value);
-    } catch (e) {
-      console.log("⚠ Error parsing saved cart settings", e);
-    }
-  }
+      log.info("Fetch cart settings request received", {
+        event: "cart.settings.fetch.received",
+      });
 
-  return json({ settings });
+      const { admin, session } = await authenticate.admin(request);
+      const shop = session.shop;
+
+      log.info("Fetching cart settings metafield", {
+        event: "cart.settings.fetch.start",
+        shop,
+      });
+
+      const query = `
+        query {
+          shop {
+            metafield(namespace: "optimaio_cart", key: "cart_settings") {
+              value
+            }
+          }
+        }
+      `;
+
+      const res = await admin.graphql(query);
+      const data = await res.json();
+
+      let settings = {
+        theme: "theme1",
+        announcementBar: {
+          messages: [],
+          autoScroll: false,
+        },
+        bannerStyle: {},
+        colors: {},
+        customCSS: "",
+        customJS: "",
+        zIndex: "auto",
+      };
+
+      const rawValue = data?.data?.shop?.metafield?.value;
+
+      if (rawValue) {
+        try {
+          settings = JSON.parse(rawValue);
+        } catch (err) {
+          log.warn("Failed to parse cart settings metafield JSON", {
+            event: "cart.settings.parse_failed",
+            shop,
+            rawValue,
+          });
+        }
+      } else {
+        log.info("Cart settings metafield not found, using defaults", {
+          event: "cart.settings.fetch.empty",
+          shop,
+        });
+      }
+
+      log.info("Cart settings fetched successfully", {
+        event: "cart.settings.fetch.success",
+        shop,
+      });
+
+      return json({ settings });
+    } catch (err) {
+      log.error("Cart settings loader failed", {
+        event: "cart.settings.fetch.exception",
+        error: err,
+      });
+
+      return json({ error: "Internal server error" }, { status: 500 });
+    }
+  });
 };

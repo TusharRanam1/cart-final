@@ -6,145 +6,158 @@ import {
   Icon,
   BlockStack,
   Divider,
+  Card,
+  Banner,
 } from "@shopify/polaris";
 import { ColorIcon } from "@shopify/polaris-icons";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import HelpHeader from "./HelpHeader";
 
-export default function BannerStyleSelector({ onChange , value}) {
-const [bannerType, setBannerType] = useState(value?.bannerType || "solid");
- const [solidColor, setSolidColor] = useState(value?.solidColor || "#ff0000");
-const [gradientStart, setGradientStart] = useState(value?.gradientStart || "#ff0000");
-const [gradientEnd, setGradientEnd] = useState(value?.gradientEnd || "#0000ff");
-const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
+export default function BannerStyleSelector({ onChange, value }) {
+  const [bannerType, setBannerType] = useState(value?.bannerType || "solid");
+  const [solidColor, setSolidColor] = useState(value?.solidColor || "#ff0000");
+  const [gradientStart, setGradientStart] = useState(
+    value?.gradientStart || "#ff0000",
+  );
+  const [gradientEnd, setGradientEnd] = useState(
+    value?.gradientEnd || "#0000ff",
+  );
+  const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
 
   const [uploadedFile, setUploadedFile] = useState(null);
 
   useEffect(() => {
-  if (!value) return;
-  setBannerType(value.bannerType || "solid");
-  setSolidColor(value.solidColor || "#ff0000");
-  setGradientStart(value.gradientStart || "#ff0000");
-  setGradientEnd(value.gradientEnd || "#0000ff");
-  setImageUrl(value.imageUrl || "");
-}, [value]);
-
+    if (!value) return;
+    setBannerType(value.bannerType || "solid");
+    setSolidColor(value.solidColor || "#ff0000");
+    setGradientStart(value.gradientStart || "#ff0000");
+    setGradientEnd(value.gradientEnd || "#0000ff");
+    setImageUrl(value.imageUrl || "");
+  }, [value]);
 
   const emitChange = (updated = {}) => {
-  onChange?.({
-    bannerType,
-    solidColor,
-    gradientStart,
-    gradientEnd,
-    imageUrl,
-    uploadedFile,
-    ...updated, // override with incoming values
-  });
-};
-
-
+    onChange?.({
+      bannerType,
+      solidColor,
+      gradientStart,
+      gradientEnd,
+      imageUrl,
+      uploadedFile,
+      ...updated, // override with incoming values
+    });
+  };
 
   return (
     <Box paddingTop="200" paddingBottom="300">
-
       {/* ---- YOUR HELP HEADER COMPONENT ---- */}
-      <HelpHeader
-        title="Cart banner"
-        helpText="Choose between solid/gradient colors or custom images for the banner"
-      />
+      <Box paddingBlockEnd="300">
+        <HelpHeader
+          title="Cart banner"
+          helpText="Choose between solid/gradient colors or custom images for the banner"
+        />
+      </Box>
+      <Box paddingBlockEnd="200">
+        <Divider />
+      </Box>
 
       {/* --------- TABS --------- */}
-      <InlineStack align="center" gap="600" wrap={false}>
-
-        {["solid", "gradient", "image"].map((type) => (
-          <Box
-            key={type}
-           onClick={() => {
-  setBannerType(type);
-  emitChange({ bannerType: type });
-}}
-
-            style={{ cursor: "pointer", textAlign: "center" }}
-          >
-            <Text
-              variant="bodyLg"
-              fontWeight={bannerType === type ? "bold" : "regular"}
-              color={bannerType === type ? "text" : "subdued"}
+      <Box paddingBottom="400" paddingTop="400">
+        <InlineStack align="center" gap="600" wrap={false}>
+          {["solid", "gradient", "image"].map((type) => (
+            <Box
+              key={type}
+              onClick={() => {
+                setBannerType(type);
+                emitChange({ bannerType: type });
+              }}
+              style={{ cursor: "pointer", textAlign: "center" }}
             >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </Text>
+              <Text
+                variant="bodyLg"
+                fontWeight={bannerType === type ? "bold" : "regular"}
+                color={bannerType === type ? "text" : "subdued"}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </Text>
 
-            {bannerType === type && (
-              <Box
-                style={{
-                  height: "2px",
-                  width: "100%",
-                  marginTop: "4px",
-                  backgroundColor: "#000",
-                }}
-              />
-            )}
-          </Box>
-        ))}
-
-      </InlineStack>
+              {bannerType === type && (
+                <Box
+                  style={{
+                    height: "2px",
+                    width: "100%",
+                    marginTop: "4px",
+                    backgroundColor: "#000",
+                  }}
+                />
+              )}
+            </Box>
+          ))}
+        </InlineStack>
+      </Box>
 
       {/* -------- SOLID PICKER -------- */}
       {bannerType === "solid" && (
         <Box paddingY="400">
-            <div style={{ marginTop: "10px" }}> <Divider /></div>
-             
-          <Text variant="headingSm" fontWeight="semibold">
-            Choose Solid Color
-          </Text>
-
-          <Box
-            onClick={() =>
-              document.getElementById("solidColorPickerInput")?.click()
-            }
-            padding="200"
-            borderWidth="2"
-            borderColor="border"
-            borderRadius="300"
-            background="bg-surface-secondary"
-            marginTop="300"
-            style={{
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "48px",
-              gap: "12px",
-            }}
-          >
-            <Box
-              style={{
-                width: "34px",
-                height: "34px",
-                background: solidColor,
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon source={ColorIcon} tone="inverse" />
+          <div style={{ marginTop: "10px" }}>
+            {" "}
+            <Box paddingBlockEnd="200">
+              <Divider />
             </Box>
+          </div>
 
-            <Text variant="bodyMd" tone="subdued">Solid color</Text>
+          <Box width="100%">
+            <Card padding="100">
+              <Box
+                onClick={() =>
+                  document.getElementById("solidColorPickerInput")?.click()
+                }
+                style={{
+                  cursor: "pointer",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "start",
+                  padding: "2%",
+                  gap: "10px",
+                  width: "100%",
+                }}
+              >
+                <Box
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    background: solidColor,
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon source={ColorIcon} tone="inverse" />
+                </Box>
 
-            <input
-              type="color"
-              id="solidColorPickerInput"
-              value={solidColor}
-            onChange={(e) => {
-  const v = e.target.value;
-  setSolidColor(v);
-  emitChange({ solidColor: v, bannerType: "solid" });
-}}
+                <Text variant="bodyMd" tone="subdued">
+                  Solid color
+                </Text>
 
-              style={{ display: "none" }}
-            />
+                <input
+                  type="color"
+                  id="solidColorPickerInput"
+                  value={solidColor}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSolidColor(v);
+                    emitChange({ solidColor: v, bannerType: "solid" });
+                  }}
+                  style={{
+                    position: "absolute",
+                    opacity: 0,
+                    width: "1px",
+                    height: "1px",
+                  }}
+                />
+              </Box>
+            </Card>
           </Box>
         </Box>
       )}
@@ -152,136 +165,153 @@ const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
       {/* -------- GRADIENT PICKER -------- */}
       {bannerType === "gradient" && (
         <Box paddingY="400">
-            <div style={{ marginTop: "10px" }}> <Divider /></div>
-             
-          <Text variant="headingSm" fontWeight="semibold">
-            Choose Gradient Colors
-          </Text>
-
-          <InlineStack gap="0" marginTop="300" align="center">
-            
-            {/* Start */}
-            <Box
-              onClick={() =>
-                document.getElementById("gradientStartColorInput")?.click()
-              }
-              padding="200"
-              borderWidth="2"
-              borderColor="border"
-              borderRadius="300 0 0 300"
-              background="bg-surface-secondary"
-              style={{
-                cursor: "pointer",
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "48px",
-                gap: "12px",
-              }}
-            >
-              <Box
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  background: gradientStart,
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon source={ColorIcon} tone="inverse" />
-              </Box>
-
-              <Text variant="bodyMd" tone="subdued">Start color</Text>
-
-              <input
-                type="color"
-                id="gradientStartColorInput"
-                value={gradientStart}
-               onChange={(e) => {
-  const v = e.target.value;
-  setGradientStart(v);
-  emitChange({ gradientStart: v, bannerType: "gradient" });
-}}
-
-                style={{ display: "none" }}
-              />
+          <div style={{ marginTop: "10px" }}>
+            {" "}
+            <Box paddingBlockEnd="200">
+              <Divider />
             </Box>
+          </div>
+          <InlineStack gap="200" marginTop="300" align="start" wrap={false}>
+            {/* PRIMARY (left box) */}
+            {/* PRIMARY */}
 
-            {/* Divider */}
-            <Box
-              style={{
-                width: "1px",
-                height: "48px",
-                background: "#d9d9d9",
-              }}
-            />
+            <Box width="50%">
+              <Card padding="100">
+                {/* Start */}
+                <Box
+                  onClick={() =>
+                    document.getElementById("gradientStartColorInput")?.click()
+                  }
+                  style={{
+                    cursor: "pointer",
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "start",
+                    padding: "2%",
+                    gap: "10px",
+                    width: "100%",
+                  }}
+                >
+                  <Box
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      background: gradientStart,
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Icon source={ColorIcon} tone="inverse" />
+                  </Box>
+
+                  <Text variant="bodyMd" tone="subdued">
+                    Start color
+                  </Text>
+
+                  <input
+                    type="color"
+                    id="gradientStartColorInput"
+                    value={gradientStart}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setGradientStart(v);
+                      emitChange({ gradientStart: v, bannerType: "gradient" });
+                    }}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: "1px",
+                      height: "1px",
+                    }}
+                  />
+                </Box>
+              </Card>
+            </Box>
 
             {/* End */}
-            <Box
-              onClick={() =>
-                document.getElementById("gradientEndColorInput")?.click()
-              }
-              padding="200"
-              borderWidth="2"
-              borderColor="border"
-              borderRadius="0 300 300 0"
-              background="bg-surface-secondary"
-              style={{
-                cursor: "pointer",
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "48px",
-                gap: "12px",
-              }}
-            >
-              <Box
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  background: gradientEnd,
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon source={ColorIcon} tone="inverse" />
-              </Box>
+            <Box width="50%">
+              <Card padding="100">
+                <Box
+                  onClick={() =>
+                    document.getElementById("gradientEndColorInput")?.click()
+                  }
+                  style={{
+                    cursor: "pointer",
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "start",
+                    padding: "2%",
+                    gap: "10px",
+                    width: "100%",
+                  }}
+                >
+                  <Box
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      background: gradientEnd,
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Icon source={ColorIcon} tone="inverse" />
+                  </Box>
 
-              <Text variant="bodyMd" tone="subdued">End color</Text>
+                  <Text variant="bodyMd" tone="subdued">
+                    End color
+                  </Text>
 
-              <input
-                type="color"
-                id="gradientEndColorInput"
-                value={gradientEnd}
-               onChange={(e) => {
-  const v = e.target.value;
-  setGradientEnd(v);
-  emitChange({ gradientEnd: v, bannerType: "gradient" });
-}}
-
-                style={{ display: "none" }}
-              />
+                  <input
+                    type="color"
+                    id="gradientEndColorInput"
+                    value={gradientEnd}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setGradientEnd(v);
+                      emitChange({ gradientEnd: v, bannerType: "gradient" });
+                    }}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: "1px",
+                      height: "1px",
+                    }}
+                  />
+                </Box>
+              </Card>
             </Box>
-
           </InlineStack>
+          <div style={{ marginTop: "10px" }}>
+            <Banner>
+              <p>
+                Choose Start and End colors. If both are the same, the progress
+                bar shows a solid color. If they’re different, it becomes a
+                gradient.
+              </p>
+            </Banner>
+          </div>
         </Box>
       )}
 
       {/* -------- IMAGE PICKER -------- */}
       {bannerType === "image" && (
         <Box paddingY="400">
+          <div style={{ marginTop: "10px" }}>
+            {" "}
+            <Box paddingBlockEnd="200">
+              <Divider />
+            </Box>
+          </div>
 
-            <div style={{ marginTop: "10px" }}> <Divider /></div>
-             
-          <Text variant="headingSm" fontWeight="semibold">
+          {/* <Text variant="headingSm" fontWeight="semibold">
             Upload Image
-          </Text>
+          </Text> */}
 
           <BlockStack gap="300" marginTop="300">
             <TextField
@@ -289,10 +319,9 @@ const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
               placeholder="Paste image URL"
               value={imageUrl}
               onChange={(v) => {
-  setImageUrl(v);
-  emitChange({ imageUrl: v, bannerType: "image" });
-}}
-
+                setImageUrl(v);
+                emitChange({ imageUrl: v, bannerType: "image" });
+              }}
             />
 
             {/* <InlineStack align="center" gap="200">
@@ -319,7 +348,12 @@ const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
                 type="file"
                 accept="image/*"
                 id="imageUploadInput"
-                style={{ display: "none" }}
+                style={{
+    position: "absolute",
+    opacity: 0,
+    width: "1px",
+    height: "1px",
+  }}
                 onChange={(e) => {
   const file = e.target.files[0];
   setUploadedFile(file);
@@ -331,7 +365,6 @@ const [imageUrl, setImageUrl] = useState(value?.imageUrl || "");
           </BlockStack>
         </Box>
       )}
-
     </Box>
   );
 }

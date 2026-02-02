@@ -122,83 +122,81 @@ function TimePickerField({
   });
 
   return (
-    <Box width="200px">
-      <Popover
-        active={popoverActive}
-        autofocusTarget="none"
-        preferredAlignment="left"
-        activator={
-          <div
-            onClick={() => setPopoverActive(true)}
-            style={{ cursor: "pointer" }}
-          >
-            <TextField
-              label={label}
-              value={value}
-              prefix={<Icon source={ClockIcon} tone="base" />}
-              readOnly
-              error={error}
-            />
-          </div>
-        }
-        onClose={() => setPopoverActive(false)}
-      >
-        <Box padding="300">
-          <InlineStack gap="200" align="center" blockAlign="center">
-            {/* Hours */}
-            <Scrollable shadow style={{ height: "180px", width: "60px" }}>
-              {hours.map((h) => {
-                const disabled = isDisabled(h, minute, period);
-                const selected = h === hour;
-                return (
-                  <div
-                    key={`h-${h}`}
-                    onClick={() => !disabled && handleSelect(h, minute, period)}
-                    style={optionStyle(selected, disabled)}
-                  >
-                    {h}
-                  </div>
-                );
-              })}
-            </Scrollable>
+    <Popover
+      active={popoverActive}
+      autofocusTarget="none"
+      preferredAlignment="left"
+      activator={
+        <div
+          onClick={() => setPopoverActive(true)}
+          style={{ cursor: "pointer" }}
+        >
+          <TextField
+            label={label}
+            value={value}
+            prefix={<Icon source={ClockIcon} tone="base" />}
+            readOnly
+            error={error}
+          />
+        </div>
+      }
+      onClose={() => setPopoverActive(false)}
+    >
+      <Box padding="300">
+        <InlineStack gap="200" align="center" blockAlign="center">
+          {/* Hours */}
+          <Scrollable shadow style={{ height: "180px", width: "60px" }}>
+            {hours.map((h) => {
+              const disabled = isDisabled(h, minute, period);
+              const selected = h === hour;
+              return (
+                <div
+                  key={`h-${h}`}
+                  onClick={() => !disabled && handleSelect(h, minute, period)}
+                  style={optionStyle(selected, disabled)}
+                >
+                  {h}
+                </div>
+              );
+            })}
+          </Scrollable>
 
-            {/* Minutes */}
-            <Scrollable shadow style={{ height: "180px", width: "60px" }}>
-              {minutes.map((m) => {
-                const disabled = isDisabled(hour, m, period);
-                const selected = m === minute;
-                return (
-                  <div
-                    key={`m-${m}`}
-                    onClick={() => !disabled && handleSelect(hour, m, period)}
-                    style={optionStyle(selected, disabled)}
-                  >
-                    {String(m).padStart(2, "0")}
-                  </div>
-                );
-              })}
-            </Scrollable>
+          {/* Minutes */}
+          <Scrollable shadow style={{ height: "180px", width: "60px" }}>
+            {minutes.map((m) => {
+              const disabled = isDisabled(hour, m, period);
+              const selected = m === minute;
+              return (
+                <div
+                  key={`m-${m}`}
+                  onClick={() => !disabled && handleSelect(hour, m, period)}
+                  style={optionStyle(selected, disabled)}
+                >
+                  {String(m).padStart(2, "0")}
+                </div>
+              );
+            })}
+          </Scrollable>
 
-            {/* AM/PM */}
-            <Scrollable shadow style={{ height: "180px", width: "60px" }}>
-              {periods.map((p) => {
-                const disabled = isDisabled(hour, minute, p);
-                const selected = p === period;
-                return (
-                  <div
-                    key={`p-${p}`}
-                    onClick={() => !disabled && handleSelect(hour, minute, p)}
-                    style={optionStyle(selected, disabled)}
-                  >
-                    {p}
-                  </div>
-                );
-              })}
-            </Scrollable>
-          </InlineStack>
-        </Box>
-      </Popover>
-    </Box>
+          {/* AM/PM */}
+          <Scrollable shadow style={{ height: "180px", width: "60px" }}>
+            {periods.map((p) => {
+              const disabled = isDisabled(hour, minute, p);
+              const selected = p === period;
+              return (
+                <div
+                  key={`p-${p}`}
+                  onClick={() => !disabled && handleSelect(hour, minute, p)}
+                  style={optionStyle(selected, disabled)}
+                >
+                  {p}
+                </div>
+              );
+            })}
+          </Scrollable>
+        </InlineStack>
+      </Box>
+    </Popover>
   );
 }
 
@@ -387,10 +385,10 @@ export default function TimerDateAndTime({ value, onChange }) {
           Active dates
         </Text> */}
 
-      <Box paddingBlockStart="400">
+      <Box>
         {/* ---------- START DATE & TIME ---------- */}
-        <InlineStack gap="400" align="center">
-          <Box width="200px">
+        <InlineStack gap="400" align="center" wrap={false}>
+          <Box width="50%">
             <Popover
               active={startPopoverActive}
               activator={
@@ -426,20 +424,24 @@ export default function TimerDateAndTime({ value, onChange }) {
             </Popover>
           </Box>
 
-          <TimePickerField
-            label={
-              <span style={{ fontWeight: 600, color: "#000" }}>Start time</span>
-            }
-            value={startTime}
-            error={startTimeError}
-            disabledAfter={startDisabledAfterInclusive} // gray-out times >= end time when same day
-            onChange={handleStartTimeChange}
-          />
+          <Box width="50%">
+            <TimePickerField
+              label={
+                <span style={{ fontWeight: 600, color: "#000" }}>
+                  Start time
+                </span>
+              }
+              value={startTime}
+              error={startTimeError}
+              disabledAfter={startDisabledAfterInclusive} // gray-out times >= end time when same day
+              onChange={handleStartTimeChange}
+            />
+          </Box>
         </InlineStack>
 
         {/* ---------- CHECKBOX (aligned under Start date) ---------- */}
         <Box paddingBlockStart="400">
-          <InlineStack align="center" gap="400">
+          <InlineStack align="start" gap="400">
             <Box width="200px" display="flex" justifyContent="flex-start">
               <div style={{ marginLeft: "4px" }}>
                 <Checkbox
@@ -460,8 +462,8 @@ export default function TimerDateAndTime({ value, onChange }) {
         {/* ---------- END DATE & TIME ---------- */}
         {hasEndDate && (
           <Box paddingBlockStart="400">
-            <InlineStack gap="400" align="center">
-              <Box width="200px">
+            <InlineStack gap="400" align="center" wrap={false}>
+              <Box width="50%">
                 <Popover
                   active={endPopoverActive}
                   activator={
@@ -497,17 +499,19 @@ export default function TimerDateAndTime({ value, onChange }) {
                 </Popover>
               </Box>
 
-              <TimePickerField
-                label={
-                  <span style={{ fontWeight: 600, color: "#000" }}>
-                    End time
-                  </span>
-                }
-                value={endTime}
-                error={endTimeError}
-                disabledBefore={endDisabledBefore} // gray-out times < start time when same day
-                onChange={handleEndTimeChange}
-              />
+              <Box width="50%">
+                <TimePickerField
+                  label={
+                    <span style={{ fontWeight: 600, color: "#000" }}>
+                      End time
+                    </span>
+                  }
+                  value={endTime}
+                  error={endTimeError}
+                  disabledBefore={endDisabledBefore} // gray-out times < start time when same day
+                  onChange={handleEndTimeChange}
+                />
+              </Box>
             </InlineStack>
           </Box>
         )}

@@ -3,6 +3,158 @@
     center / cover no-repeat;
 } */
 
+/* =====================================================
+   OPTIMAIO CART PAGE – FINAL, STABLE VERSION
+   Works with Dawn + OS 2.0 themes
+===================================================== */
+
+/* 1️⃣ Page context */
+body.optimaio-cart-page-context {
+  overflow: auto !important;
+}
+
+/* -----------------------------------------------------
+   2️⃣ HARD STOP: Hide Dawn / OS2 cart page
+   (cart-items is the real cart container)
+----------------------------------------------------- */
+body.optimaio-cart-page-context cart-items {
+  display: none !important;
+}
+
+/* -----------------------------------------------------
+   3️⃣ Safety: Hide legacy cart markup (non-Dawn)
+----------------------------------------------------- */
+body.optimaio-cart-page-context main form[action="/cart"],
+body.optimaio-cart-page-context main .cart,
+body.optimaio-cart-page-context main .cart__items,
+body.optimaio-cart-page-context main .cart__footer {
+  display: none !important;
+}
+
+/* -----------------------------------------------------
+   4️⃣ Convert Optimaio drawer → page layout
+----------------------------------------------------- */
+body.optimaio-cart-page-context #optimaio-cart-drawer {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+
+  width: 100% !important;
+  max-width: 550px !important;
+  height: auto !important;
+
+  margin: 40px auto 40px !important;
+  box-shadow: none !important;
+  border-radius: 16px !important;
+  z-index: auto;
+}
+
+body.optimaio-cart-page-context #optimaio-corner-cart {
+  display: none !important;
+}
+
+
+/* Cart page = page scroll, no inner scroll */
+body.optimaio-cart-page-context
+#optimaio-cart-drawer
+.optimaio-cart-drawer__middle {
+  overflow: visible !important;
+}
+
+/* Clip visual overflow only */
+body.optimaio-cart-page-context
+#optimaio-cart-drawer {
+  overflow: hidden;
+}
+
+/* Progress bar safety */
+
+.optimaio-loader-bar {
+  overflow: hidden;
+}
+/* =========================================
+   OPTIMAIO – STICKY FLOW LOADER (MIDDLE)
+========================================= */
+
+/* Ensure middle is scroll container */
+.optimaio-cart-drawer__middle {
+  position: relative;
+}
+
+/* Loader wrapper */
+.optimaio-cart-loading {
+  position: sticky;
+  top: 0;                      /* stick to top of scroll */
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9);
+ 
+}
+
+/* Hidden state */
+.optimaio-cart-loading.hidden {
+  display: none !important;
+}
+
+/* Track */
+.optimaio-loader-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Animated fill */
+.optimaio-loader-fill {
+  position: absolute;
+  left: -30%;
+  width: 30%;
+  height: 100%;
+  background: var(--accent, #000);
+  animation: optimaio-flow 1.1s ease-in-out infinite;
+}
+
+/* Left → Right → Left */
+@keyframes optimaio-flow {
+  0%   { left: -30%; }
+  50%  { left: 100%; }
+  100% { left: -30%; }
+}
+
+
+
+/* -----------------------------------------------------
+   5️⃣ Disable drawer-only animation
+----------------------------------------------------- */
+body.optimaio-cart-page-context #optimaio-cart-drawer {
+  transition: none !important;
+}
+
+/* -----------------------------------------------------
+   6️⃣ Kill overlay / backdrop
+----------------------------------------------------- */
+body.optimaio-cart-page-context .optimaio-cart-overlay {
+  display: none !important;
+}
+
+/* -----------------------------------------------------
+   7️⃣ Footer + summary should flow naturally
+----------------------------------------------------- */
+body.optimaio-cart-page-context
+.optimaio-cart-drawer__summary-checkout,
+body.optimaio-cart-page-context
+.optimaio-cart-drawer__footer {
+  position: static !important;
+}
+
+/* -----------------------------------------------------
+   8️⃣ Optional: reduce Dawn section spacing (cosmetic)
+----------------------------------------------------- */
+body.optimaio-cart-page-context
+.section-template--* {
+  padding-top: 0 !important;
+}
+
+
 .optimaio-countdown {
   background: var(--bg-secondary);
   padding: 4px 10px;
@@ -73,16 +225,50 @@ body.optimaio-cart-open {
 #optimaio-corner-cart {
   position: fixed;
   bottom: 20px;
-  right: 20px;
-  background: var(--btn-bg);
-  color: var(--btn-color);
-  padding: 10px 16px;
-  border-radius: 40px;
+
+  left: auto;
+  right: auto; /* ✅ important */
+
+  background-color: var(--optimaio-widget-bg, var(--accent));
+  color: var(--optimaio-widget-color, var(--accent-contrast));
+  padding: 12px 15px;
+  border-radius: 15px;
   cursor: pointer;
   font-size: 14px;
   z-index: calc(var(--optimaio-z-index, 10000) - 1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
+#optimaio-corner-cart svg {
+  color: var(--accent-contrast); /* SVG stroke color */
+}
+
+/* ================================
+   OPTIMAIO FLOATING CART — POSITION
+================================ */
+
+#optimaio-corner-cart.position-right {
+  right: 20px;
+  left: auto;
+}
+
+#optimaio-corner-cart.position-left {
+  left: 20px;
+  right: auto;
+}
+
+@media (max-width: 768px) {
+  #optimaio-corner-cart.position-right {
+    right: 15px;
+    left: auto;
+  }
+
+  #optimaio-corner-cart.position-left {
+    left: 15px;
+    right: auto;
+  }
+}
+
+
 #optimaio-corner-cart span {
   font-weight: 700;
   margin: 0 4px;
@@ -117,9 +303,9 @@ body.optimaio-cart-open {
   padding: 12px 12px 0px;
   /* border-bottom: 1px solid var(--border); */
   background: transparent;
-  position: sticky;
+  /* position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 5; */
 }
 .optimaio-cart-tile {
   font-size: 18px;
@@ -963,6 +1149,7 @@ body.optimaio-cart-open {
   display: grid;                 /* ⭐ key fix */
   place-items: center;
   min-height: 20px;
+  margin: 0 auto;
 }
 
 /* Base */
@@ -984,6 +1171,34 @@ body.optimaio-cart-open {
 .optimaio-announcement-item.active {
   opacity: 1;
   visibility: visible;
+}
+
+/* ================================
+   OPTIMAIO ANNOUNCEMENT — ARROWS
+================================ */
+
+/* Default: centered text */
+.optimaio-announcement-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.optimaio-announcement-arrow {
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-primary);
+  opacity: 0.6;
+  padding: 0 6px;
+  display: none; /* JS controls visibility */
+}
+
+.optimaio-announcement-arrow:hover {
+  opacity: 1;
 }
 
 /* ================================

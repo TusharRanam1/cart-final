@@ -354,10 +354,10 @@ if (AUTO_REFRESH_TIMER > 0) {
 <script src="{{ 'optimaio.js' | asset_url }}" defer></script>
  
  {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
-{{ 'optimaio-theme-minimal.css' | asset_url | stylesheet_tag }}
-{{ 'optimaio-theme-cool.css' | asset_url | stylesheet_tag }}
-{{ 'optimaio-theme-dark.css' | asset_url | stylesheet_tag }}
-{{ 'optimaio-demo-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme1-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme2-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme3-color.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme4-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme5-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme6-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme7-color.css' | asset_url | stylesheet_tag }}
@@ -378,12 +378,15 @@ if (AUTO_REFRESH_TIMER > 0) {
   
       if (!roots.length) return;
   
-      /* ----------------------------
-         1️⃣ Apply theme ONLY to cart
-      ---------------------------- */
-      roots.forEach(root => {
-        root.setAttribute("data-optimaio-theme", theme);
-      });
+   /* ----------------------------
+   1️⃣ Apply theme (SYNC ROOT)
+---------------------------- */
+document.body.setAttribute("data-optimaio-theme", theme);
+
+roots.forEach(root => {
+  root.setAttribute("data-optimaio-theme", theme);
+});
+
   
       /* ----------------------------
          2️⃣ Apply banner style
@@ -391,6 +394,7 @@ if (AUTO_REFRESH_TIMER > 0) {
       ---------------------------- */
       roots.forEach(root => {
         // reset first
+        if (root.id === "optimaio-corner-cart") return; // 👈 ADD THIS LINE
         root.style.background = "";
         root.style.backgroundImage = "";
   
@@ -482,7 +486,8 @@ if (AUTO_REFRESH_TIMER > 0) {
  
 <!-- Optimaio Universal Responsive Cart Drawer -->
 <div id="optimaio-corner-cart">
-  🛒 <span id="optimaio-corner-cart-count">0</span>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart-icon lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+   {% comment %} <span id="optimaio-corner-cart-count">0</span> {% endcomment %}
 </div>
  
 <div id="optimaio-cart-drawer" class="optimaio-cart-drawer" data-active-tab="cart">
@@ -498,18 +503,17 @@ if (AUTO_REFRESH_TIMER > 0) {
 
 
   <div class="optimaio-announcement-bar">
-    <div class="optimaio-announcement-viewport">
-      <div class="optimaio-announcement-item active">
-        Don’t miss out! Claim your free gifts below 🎁
-      </div>
-      <div class="optimaio-announcement-item">
-        Add more items to unlock exclusive rewards ✨
-      </div>
-      <div class="optimaio-announcement-item">
-        Limited-time offers available in your cart ⏰
-      </div>
-    </div>
+    <button class="optimaio-announcement-arrow left" aria-label="Previous">‹</button>
+  
+    <div
+      class="optimaio-announcement-viewport"
+      id="optimaio-announcement-viewport"
+    ></div>
+  
+    <button class="optimaio-announcement-arrow right" aria-label="Next">›</button>
   </div>
+  
+  
   
   
   
@@ -534,6 +538,12 @@ if (AUTO_REFRESH_TIMER > 0) {
   <!-- Middle Scrollable Body -->
   <div class="optimaio-cart-drawer__middle">
     
+    <!-- Optimaio Flow Loader -->
+<div id="optimaio-cart-loading" class="optimaio-cart-loading hidden">
+  <div class="optimaio-loader-bar">
+    <span class="optimaio-loader-fill"></span>
+  </div>
+</div>
     
     <!-- TAB: CART -->
     {% comment %} <div class="optimaio-cart-drawer-border-radius"> {% endcomment %}
@@ -673,8 +683,52 @@ if (AUTO_REFRESH_TIMER > 0) {
   
     </div>
   </div>
+
+
+
   
 </div>
+
+
+<script>
+  (function () {
+    const settings = window.__OPTIMAIO_CART__?.settings;
+    const widget = settings?.cartWidget;
+  
+    const cart = document.getElementById("optimaio-corner-cart");
+    if (!cart || !widget) return;
+  
+    /* ----------------------------
+       1️⃣ Show / Hide
+    ---------------------------- */
+    if (!widget.showFloatingWidget) {
+      cart.style.display = "none";
+      return;
+    }
+  
+    cart.style.display = "flex";
+  
+    /* ----------------------------
+       2️⃣ Position (left / right)
+    ---------------------------- */
+    cart.classList.remove("position-left", "position-right");
+  
+    if (widget.position === "left") {
+      cart.classList.add("position-left");
+    } else {
+      cart.classList.add("position-right"); // default
+    }
+  
+    /* ----------------------------
+       3️⃣ Widget Color
+    ---------------------------- */
+    if (widget.widgetColor) {
+      cart.style.background = widget.widgetColor;
+    }
+  
+  })();
+  </script>
+  
  
 <script>
   (function () {
@@ -778,25 +832,84 @@ if (AUTO_REFRESH_TIMER > 0) {
 
   </script>
   
-<script>
-  (function () {
-    const items = document.querySelectorAll(".optimaio-announcement-item");
-    if (items.length <= 1) return;
-  
-    let index = 0;
-  
-    // Init
-    items.forEach((el, i) => {
-      el.classList.toggle("active", i === 0);
-    });
-  
-    setInterval(() => {
-      items[index].classList.remove("active");
-      index = (index + 1) % items.length;
-      items[index].classList.add("active");
-    }, 4000);
-  })();
-  </script>
+  <script>
+    (function () {
+      const announcement =
+        window.__OPTIMAIO_CART__?.settings?.announcementBar;
+    
+      if (!announcement) return;
+    
+      const messages = Array.isArray(announcement.messages)
+        ? announcement.messages.filter(Boolean)
+        : [];
+    
+      if (!messages.length) return;
+    
+      const autoScroll = announcement.autoScroll === true;
+    
+      const viewport = document.getElementById("optimaio-announcement-viewport");
+      if (!viewport) return;
+    
+      const bar = viewport.closest(".optimaio-announcement-bar");
+      const prevBtn = bar.querySelector(".optimaio-announcement-arrow.left");
+      const nextBtn = bar.querySelector(".optimaio-announcement-arrow.right");
+    
+      /* ----------------------------
+         1️⃣ Render messages
+      ---------------------------- */
+      viewport.innerHTML = "";
+    
+      messages.forEach((text, i) => {
+        const el = document.createElement("div");
+        el.className = "optimaio-announcement-item";
+        if (i === 0) el.classList.add("active");
+        el.textContent = text;
+        viewport.appendChild(el);
+      });
+    
+      const items = viewport.querySelectorAll(".optimaio-announcement-item");
+      let index = 0;
+    
+      /* ----------------------------
+         2️⃣ AUTO SCROLL MODE
+      ---------------------------- */
+      if (autoScroll && items.length > 1) {
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
+    
+        if (window.__OPTIMAIO_ANNOUNCEMENT_TIMER__) {
+          clearInterval(window.__OPTIMAIO_ANNOUNCEMENT_TIMER__);
+        }
+    
+        window.__OPTIMAIO_ANNOUNCEMENT_TIMER__ = setInterval(() => {
+          items[index].classList.remove("active");
+          index = (index + 1) % items.length;
+          items[index].classList.add("active");
+        }, 4000);
+    
+        return;
+      }
+    
+      /* ----------------------------
+         3️⃣ MANUAL MODE (ARROWS)
+      ---------------------------- */
+      if (!autoScroll && items.length > 1) {
+        prevBtn.style.display = "block";
+        nextBtn.style.display = "block";
+    
+        function show(i) {
+          items[index].classList.remove("active");
+          index = (i + items.length) % items.length;
+          items[index].classList.add("active");
+        }
+    
+        prevBtn.onclick = () => show(index - 1);
+        nextBtn.onclick = () => show(index + 1);
+      }
+    })();
+    </script>
+    
+    
   
 
 
@@ -1003,7 +1116,84 @@ container.style.display = "flex";
 @media (max-width:768px){#optimaio-corner-cart{bottom:15px;right:15px;font-size:13px;padding:8px 14px;}}
 </style> {% endcomment %}
  
+<script>
+  (function () {
+    /* ----------------------------------
+       1️⃣ Detect cart page
+    ---------------------------------- */
+    const isCartPage =
+      location.pathname === "/cart" ||
+      document.body.classList.contains("template-cart");
+  
+    if (!isCartPage) return;
+  
+    /* ----------------------------------
+       2️⃣ Mark page context
+    ---------------------------------- */
+    document.body.classList.add("optimaio-cart-page-context");
 
+    
+  
+    /* ----------------------------------
+       3️⃣ Locate drawer
+    ---------------------------------- */
+    const drawer = document.getElementById("optimaio-cart-drawer");
+    if (!drawer) return;
+  
+    /* ----------------------------------
+       4️⃣ Move drawer into <main>
+    ---------------------------------- */
+    const main =
+      document.querySelector("main") ||
+      document.getElementById("MainContent");
+  
+    if (main && !main.contains(drawer)) {
+      main.prepend(drawer);
+    }
+  
+    /* ----------------------------------
+       5️⃣ Switch to PAGE mode
+       (⚠️ DO NOT remove .open anymore)
+    ---------------------------------- */
+    drawer.classList.add("optimaio-cart-page");
+    drawer.classList.add("open"); // ✅ REQUIRED for CSS + logic
+    drawer.setAttribute("data-context", "page");
+  
+    /* ----------------------------------
+       6️⃣ 🔥 FORCE FULL INIT (REAL FIX)
+    ---------------------------------- */
+    function forceOptimaioInit() {
+      // 1️⃣ Logical open flag (internal guards)
+      window.__OPTIMAIO_DRAWER_OPEN__ = true;
+  
+      // 2️⃣ Force cart render
+      if (typeof window.getCartAndRender === "function") {
+        window.getCartAndRender();
+      }
+  
+      // 3️⃣ Force controller refresh (items, gifts, progress)
+      window.OptimaioCartController?.refresh();
+  
+      // 4️⃣ Fire lifecycle event (observers, BXGY, progress bar)
+      document.dispatchEvent(
+        new CustomEvent("optimaio:open", {
+          detail: { context: "page", silent: true }
+        })
+      );
+    }
+  
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", forceOptimaioInit);
+    } else {
+      forceOptimaioInit();
+    }
+  })();
+  </script>
+  
+  
+  
+  
+  
 {% schema %}
 {
 "name": "Optimaio Corner Cart",

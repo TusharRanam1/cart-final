@@ -14,13 +14,17 @@ export default function HelpHeader({ title, helpText }) {
             {title}
           </Text>
 
-          <Button
-            variant="plain"
-            onClick={() => setOpen((prev) => !prev)}
-            removeUnderline
-          >
-            <Icon source={QuestionCircleIcon} tone="base" />
-          </Button>
+          {helpText ? (
+            <Button
+              variant="plain"
+              onClick={() => setOpen((prev) => !prev)}
+              removeUnderline
+            >
+              <Icon source={QuestionCircleIcon} tone="base" />
+            </Button>
+          ) : (
+            ""
+          )}
         </InlineStack>
       </InlineStack>
 

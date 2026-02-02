@@ -9,6 +9,7 @@ import {
   Icon,
   Box,
   LegacyCard,
+  Banner,
 } from "@shopify/polaris";
 import { SearchIcon } from "@shopify/polaris-icons";
 import { useState, useEffect, Fragment, useCallback, useMemo } from "react";
@@ -18,6 +19,7 @@ export default function ProductPickerModal({
   onClose,
   onSelect,
   initialSelected = [],
+  singleSelect = false, // ✅ NEW
 }) {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -29,18 +31,22 @@ export default function ProductPickerModal({
   // 🧠 Fetch products
   useEffect(() => {
     if (!open) return;
-    setSelectedIds(initialSelected.map((p) => p.id));
+    setSelectedIds(
+      singleSelect && initialSelected.length > 0
+        ? [initialSelected[0].id]
+        : initialSelected.map((p) => p.id),
+    );
+
     setLoading(true);
 
     (async () => {
       try {
         const res = await fetch("/api/products");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-   const data = await res.json();
-const valid = Array.isArray(data.products) ? data.products : [];
-setProducts(valid);
-setFilteredProducts(valid);
-
+        const data = await res.json();
+        const valid = Array.isArray(data.products) ? data.products : [];
+        setProducts(valid);
+        setFilteredProducts(valid);
 
         // Prepare options for Autocomplete
         const opts = valid.map((p) => ({
@@ -74,7 +80,7 @@ setFilteredProducts(valid);
       const filtered = products.filter(
         (p) =>
           p.title.match(filterRegex) ||
-          p.variants?.some((v) => v.title.match(filterRegex))
+          p.variants?.some((v) => v.title.match(filterRegex)),
       );
       setFilteredProducts(filtered);
 
@@ -83,7 +89,7 @@ setFilteredProducts(valid);
         .map((p) => ({ value: p.id, label: p.title }));
       setOptions(filteredOptions);
     },
-    [products]
+    [products],
   );
 
   const updateSelection = useCallback(
@@ -96,7 +102,7 @@ setFilteredProducts(valid);
       const match = products.filter((p) => p.id === selected[0]);
       setFilteredProducts(match.length ? match : products);
     },
-    [options, products]
+    [options, products],
   );
 
   const textField = useMemo(
@@ -109,16 +115,16 @@ setFilteredProducts(valid);
         autoComplete="off"
       />
     ),
-    [inputValue, updateText]
+    [inputValue, updateText],
   );
 
   const allVariants = filteredProducts.flatMap((p) =>
-    p.variants.map((v) => ({ ...v, productTitle: p.title }))
+    p.variants.map((v) => ({ ...v, productTitle: p.title })),
   );
 
   const handleSelect = () => {
     const selectedVariants = allVariants.filter((v) =>
-      selectedIds.includes(v.id)
+      selectedIds.includes(v.id),
     );
     onSelect(selectedVariants);
     onClose();
@@ -159,10 +165,19 @@ setFilteredProducts(valid);
             }}
           >
             <Text>
-              {selectedIds.length > 0
-                ? `${selectedIds.length} selected`
-                : "No variants selected"}
+              {singleSelect ? (
+                <Banner status="info">
+                  <p>You can only select one variant.</p>
+                </Banner>
+              ) : (
+                <Text>
+                  {selectedIds.length > 0
+                    ? `${selectedIds.length} selected`
+                    : "No variants selected"}
+                </Text>
+              )}
             </Text>
+
             {selectedIds.length > 0 && (
               <button
                 style={{
@@ -209,15 +224,14 @@ setFilteredProducts(valid);
                     const variants = product.variants || [];
 
                     const groupSelected = variants.every((v) =>
-                      selectedIds.includes(v.id)
+                      selectedIds.includes(v.id),
                     );
                     const someSelected = variants.some((v) =>
-                      selectedIds.includes(v.id)
+                      selectedIds.includes(v.id),
                     );
-                    const selectedState =
-                      groupSelected
-                        ? true
-                        : someSelected
+                    const selectedState = groupSelected
+                      ? true
+                      : someSelected
                         ? "indeterminate"
                         : false;
 
@@ -231,20 +245,23 @@ setFilteredProducts(valid);
                           onClick={() => {
                             const ids = variants.map((v) => v.id);
                             if (groupSelected) {
+                              if (singleSelect) return;
                               setSelectedIds((prev) =>
-                                prev.filter((id) => !ids.includes(id))
+                                prev.filter((id) => !ids.includes(id)),
                               );
                             } else {
-                              setSelectedIds((prev) => [
-                                ...new Set([...prev, ...ids]),
-                              ]);
+                              setSelectedIds((prev) => {
+                                if (singleSelect) {
+                                  return ids.length > 0 ? [ids[0]] : [];
+                                }
+
+                                return [...new Set([...prev, ...ids])];
+                              });
                             }
                           }}
                         >
                           <IndexTable.Cell colSpan={4}>
-                            <Text fontWeight="semibold">
-                              {product.title}
-                            </Text>
+                            <Text fontWeight="semibold">{product.title}</Text>
                           </IndexTable.Cell>
                         </IndexTable.Row>
 
@@ -261,11 +278,17 @@ setFilteredProducts(valid);
                               disabled={isDisabled}
                               onClick={() => {
                                 if (isDisabled) return;
-                                setSelectedIds((prev) =>
-                                  prev.includes(variant.id)
+                                setSelectedIds((prev) => {
+                                  if (singleSelect) {
+                                    return prev[0] === variant.id
+                                      ? []
+                                      : [variant.id];
+                                  }
+
+                                  return prev.includes(variant.id)
                                     ? prev.filter((id) => id !== variant.id)
-                                    : [...prev, variant.id]
-                                );
+                                    : [...prev, variant.id];
+                                });
                               }}
                             >
                               {/* 🖼️ Image */}
@@ -292,11 +315,7 @@ setFilteredProducts(valid);
 
                               {/* 💰 Price */}
                               <IndexTable.Cell>
-                                <Text
-                                  tone={
-                                    isDisabled ? "subdued" : "default"
-                                  }
-                                >
+                                <Text tone={isDisabled ? "subdued" : "default"}>
                                   ₹{variant.price}
                                 </Text>
                               </IndexTable.Cell>

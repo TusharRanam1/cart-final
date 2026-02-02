@@ -31,6 +31,14 @@
 
 
 
+/* ----------------------------------
+   GLOBAL CART PAGE FLAG
+---------------------------------- */
+window.__OPTIMAIO_IS_CART_PAGE__ =
+  location.pathname === "/cart" ||
+  document.body.classList.contains("template-cart");
+
+
 
 /* -------------------------------------------------------------
    GLOBAL OPTIMAIO CART CONTROLLER (NO CACHE — ALWAYS FRESH)
@@ -91,6 +99,37 @@ function formatShopMoney(amountInCents) {
                .replace("{{ amount }}", amount);
 }
 
+
+/* --------------------------------------------------
+   OPTIMAIO – GLOBAL CART LOADING STATE
+-------------------------------------------------- */
+window.__OPTIMAIO_CART_LOADING__ = 0;
+
+function showOptimaioLoading() {
+  const el = document.getElementById("optimaio-cart-loading");
+  if (!el) return;
+  el.classList.remove("hidden");
+}
+
+function hideOptimaioLoading() {
+  const el = document.getElementById("optimaio-cart-loading");
+  if (!el) return;
+  el.classList.add("hidden");
+}
+
+function startCartLoading() {
+  window.__OPTIMAIO_CART_LOADING__++;
+  showOptimaioLoading();
+}
+
+function stopCartLoading() {
+  window.__OPTIMAIO_CART_LOADING__--;
+  if (window.__OPTIMAIO_CART_LOADING__ <= 0) {
+    window.__OPTIMAIO_CART_LOADING__ = 0;
+    hideOptimaioLoading();
+  }
+}
+
  
 /* -------------------------------------------------------------
    INTERCEPT ALL SHOPIFY CART ACTIONS
@@ -101,20 +140,41 @@ function formatShopMoney(amountInCents) {
    - /cart/clear.js
    (100% of cart change events)
 ------------------------------------------------------------- */
+/* -------------------------------------------------------------
+   INTERCEPT ALL SHOPIFY CART ACTIONS (WITH LOADING)
+------------------------------------------------------------- */
 (function () {
   const nativeFetch = window.fetch;
- 
+
   window.fetch = async (...args) => {
-    const result = await nativeFetch(...args);
-    const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
- 
-    if (/\/cart\/(add|change|update|clear)/.test(url)) {
-      window.OptimaioCartController.scheduleRefresh();
+    const url =
+      typeof args[0] === "string"
+        ? args[0]
+        : args[0]?.url || "";
+
+    const isCartAction =
+      /\/cart\/(add|change|update|clear)/.test(url);
+
+    if (isCartAction) {
+      startCartLoading();
     }
- 
-    return result;
+
+    try {
+      const result = await nativeFetch(...args);
+
+      if (isCartAction) {
+        window.OptimaioCartController.scheduleRefresh();
+      }
+
+      return result;
+    } finally {
+      if (isCartAction) {
+        stopCartLoading();
+      }
+    }
   };
-})();
+})(); 
+
 
 
  
@@ -349,7 +409,7 @@ function formatShopMoney(amountInCents) {
        CART RENDERING SYSTEM
     ------------------------------ */
     function renderCart(cart) {
-      document.getElementById("optimaio-corner-cart-count").textContent = cart.item_count;
+      // document.getElementById("optimaio-corner-cart-count").textContent = cart.item_count;
  
       if (cart.item_count === 0) {
         itemsContainer.innerHTML = "";
@@ -522,7 +582,7 @@ function formatShopMoney(amountInCents) {
 document.addEventListener("optimaio:cart:refresh", async () => {
   const cart = await window.OptimaioCartController.getCart();
   renderCart(cart);
-});
+  });
 
  
  
@@ -850,15 +910,17 @@ async function loadRecsForCart(cartItems) {
        OPEN / CLOSE DRAWER
     ------------------------------ */
     function openDrawer() {
-  window.optimaioClearEffects();
-  // 🔒 LOCK SCROLL (CRITICAL)
-  document.body.classList.add("optimaio-cart-open");
-  window.__OPTIMAIO_DRAWER_OPEN__ = true; // ✅ ADD
-  window.OptimaioCartController.refresh();
-  drawer.classList.add("open");
-  document.dispatchEvent(new CustomEvent("optimaio:open"));
-
-}
+      // ⛔ NEVER open drawer on cart page
+      if (window.__OPTIMAIO_IS_CART_PAGE__) return;
+    
+      window.optimaioClearEffects();
+      document.body.classList.add("optimaio-cart-open");
+      window.__OPTIMAIO_DRAWER_OPEN__ = true;
+      window.OptimaioCartController.refresh();
+      drawer.classList.add("open");
+      document.dispatchEvent(new CustomEvent("optimaio:open"));
+    }
+    
 window.__OPTIMAIO_OPEN_DRAWER__ = openDrawer;
  
     function closeDrawer() {
@@ -930,16 +992,18 @@ bindCheckoutButton();
   }
  
   function openDrawerATC() {
+    // ⛔ NEVER open drawer on cart page
+    if (window.__OPTIMAIO_IS_CART_PAGE__) return;
+  
     const drawer = getDrawer();
     if (!drawer) return;
- 
+  
     window.optimaioClearEffects();
-    // 🔒 LOCK BODY SCROLL (MISSING PART)
-  document.body.classList.add("optimaio-cart-open");
+    document.body.classList.add("optimaio-cart-open");
     window.OptimaioCartController.refresh();
- 
     drawer.classList.add("open");
   }
+  
  
   /* ------------------------------
       1) INTERCEPT PRODUCT FORMS

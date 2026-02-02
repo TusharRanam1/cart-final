@@ -28,7 +28,6 @@ export default function DynamicCollapsible({
       {/* Header */}
       <Box
         padding="100"
-        
         borderColor="border-subdued"
         background="bg-surface"
         borderTopStartRadius="300"
@@ -56,7 +55,7 @@ export default function DynamicCollapsible({
             </Button>
           </InlineStack>
 
-<div
+          <div
             style={{
               maxHeight: open ? "0px" : "100px",
               opacity: open ? 0 : 1,
@@ -64,16 +63,14 @@ export default function DynamicCollapsible({
               transition: "all 400ms ease-in-out",
             }}
           >
-           {!open && description && (
-            <Text tone="subdued" variant="bodyMd">
-              {description}
-            </Text>
-          )}
+            {!open && description && (
+              <Text tone="subdued" variant="bodyMd">
+                {description}
+              </Text>
+            )}
           </div>
 
-           {open && (
-              <Divider borderColor="border" />
-           )}
+          {open && <Divider borderColor="border" />}
         </BlockStack>
       </Box>
 
@@ -84,7 +81,7 @@ export default function DynamicCollapsible({
         transition={{ duration: "400ms", timingFunction: "ease-in-out" }}
         expandOnPrint
       >
-        <Box padding="400">
+        <Box padding="100">
           {children || (
             <Text tone="subdued">
               Add your content here (e.g. campaign goals, details, or settings).
@@ -92,8 +89,6 @@ export default function DynamicCollapsible({
           )}
         </Box>
       </Collapsible>
-
-  
     </Card>
   );
 }

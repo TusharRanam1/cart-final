@@ -1,5 +1,7 @@
-import { TextField } from "@shopify/polaris";
-
+import { TextField, InlineStack, BlockStack } from "@shopify/polaris";
+import VariablePopover from "./VariablePopover";
+import { useState } from "react";
+import HelpHeader from "./HelpHeader";
 /**
  * Reusable Polaris TextField wrapper.
  *
@@ -28,20 +30,39 @@ export default function FormTextField({
   helpText,
   required = false,
   autoComplete = "off",
+  enableVariables = true,
 }) {
+  const [variableOpen, setVariableOpen] = useState(false);
+
+  const insertVariable = (variable) => {
+    onChange(`${value || ""} ${variable}`.trim());
+  };
+
   return (
-    <TextField
-      label={label}
-      value={value || ""}
-      onChange={onChange}
-      placeholder={placeholder}
-      multiline={multiline}
-      type={type}
-      prefix={prefix}
-      suffix={suffix}
-      helpText={helpText}
-      requiredIndicator={required}
-      autoComplete={autoComplete}
-    />
+    <BlockStack gap="100">
+      <InlineStack align="space-between" blockAlign="center">
+        <HelpHeader title={label} />
+        {enableVariables && (
+          <VariablePopover
+            open={variableOpen}
+            setOpen={setVariableOpen}
+            onInsert={insertVariable}
+          />
+        )}
+      </InlineStack>
+
+      <TextField
+        value={value || ""}
+        onChange={onChange}
+        placeholder={placeholder}
+        multiline={multiline}
+        type={type}
+        prefix={prefix}
+        suffix={suffix}
+        helpText={helpText}
+        requiredIndicator={required}
+        autoComplete={autoComplete}
+      />
+    </BlockStack>
   );
 }

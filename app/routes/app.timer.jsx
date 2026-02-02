@@ -8,13 +8,20 @@ import {
   InlineStack,
   Text,
   Button,
+  Badge,
+  Banner,
 } from "@shopify/polaris";
 import { useState, useEffect, useMemo } from "react";
 import { SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 
 import TimerMessageField from "./components/TimerMessageField";
 import Colabssiblecom from "./components/Colabssiblecom";
-import { CircleLeftIcon, CircleRightIcon, ArrowLeftIcon } from "@shopify/polaris-icons";
+import {
+  CircleLeftIcon,
+  CircleRightIcon,
+  ArrowLeftIcon,
+  CalendarTimeIcon,
+} from "@shopify/polaris-icons";
 
 import ScarcityTimer from "./components/ScarcityTimer";
 import AfterTimerActions from "./components/AfterTimerActions";
@@ -32,8 +39,9 @@ export default function ResourceDetailsLayout() {
   });
 
   const [timerText, setTimerText] = useState("Hurry! Offer ends soon!");
-  const [expiredMessage, setExpiredMessage] =
-    useState("This offer has expired.");
+  const [expiredMessage, setExpiredMessage] = useState(
+    "This offer has expired.",
+  );
   const [afterAction, setAfterAction] = useState("refresh");
   const [status, setStatus] = useState("draft");
 
@@ -59,75 +67,69 @@ export default function ResourceDetailsLayout() {
       status,
       activeDates,
     }),
-    [timerConfig, timerText, expiredMessage, afterAction, status, activeDates]
+    [timerConfig, timerText, expiredMessage, afterAction, status, activeDates],
   );
 
   const isDirty =
     initialSnapshot &&
-    JSON.stringify(currentSnapshot) !==
-      JSON.stringify(initialSnapshot);
+    JSON.stringify(currentSnapshot) !== JSON.stringify(initialSnapshot);
 
   /* --------------------------------------------------
      LOAD SAVED DATA
   -------------------------------------------------- */
   useEffect(() => {
-  const loadTimerSettings = async () => {
-    try {
-      const res = await fetch("/api/get-timer");
-      const data = await res.json();
+    const loadTimerSettings = async () => {
+      try {
+        const res = await fetch("/api/get-timer");
+        const data = await res.json();
 
-      if (data.ok && data.data) {
-        const snapshot = {
-          timerConfig: data.data.timerConfig,
-          timerText: data.data.timerText,
-          expiredMessage: data.data.expiredMessage,
-          afterAction: data.data.afterAction,
-          status: data.data.status,
-          activeDates: data.data.activeDates,
-        };
+        if (data.ok && data.data) {
+          const snapshot = {
+            timerConfig: data.data.timerConfig,
+            timerText: data.data.timerText,
+            expiredMessage: data.data.expiredMessage,
+            afterAction: data.data.afterAction,
+            status: data.data.status,
+            activeDates: data.data.activeDates,
+          };
 
-        setTimerConfig(snapshot.timerConfig);
-        setTimerText(snapshot.timerText);
-        setExpiredMessage(snapshot.expiredMessage);
-        setAfterAction(snapshot.afterAction);
-        setStatus(snapshot.status);
-        setActiveDates(snapshot.activeDates);
+          setTimerConfig(snapshot.timerConfig);
+          setTimerText(snapshot.timerText);
+          setExpiredMessage(snapshot.expiredMessage);
+          setAfterAction(snapshot.afterAction);
+          setStatus(snapshot.status);
+          setActiveDates(snapshot.activeDates);
 
-        setInitialSnapshot(snapshot);
-      } else {
-        // 🔑 IMPORTANT: baseline = defaults
-        setInitialSnapshot({
-          timerConfig,
-          timerText,
-          expiredMessage,
-          afterAction,
-          status,
-          activeDates,
-        });
+          setInitialSnapshot(snapshot);
+        } else {
+          // 🔑 IMPORTANT: baseline = defaults
+          setInitialSnapshot({
+            timerConfig,
+            timerText,
+            expiredMessage,
+            afterAction,
+            status,
+            activeDates,
+          });
+        }
+      } catch (err) {
+        console.error("🔥 LOAD ERROR:", err);
       }
-    } catch (err) {
-      console.error("🔥 LOAD ERROR:", err);
-    }
-  };
+    };
 
-  loadTimerSettings();
-}, []);
-
+    loadTimerSettings();
+  }, []);
 
   /* --------------------------------------------------
      NORMALIZE DATES
   -------------------------------------------------- */
   const normalizeDates = (dates) => ({
     start: {
-      date: dates.start.date
-        ? dates.start.date.toString().split("T")[0]
-        : null,
+      date: dates.start.date ? dates.start.date.toString().split("T")[0] : null,
       time: dates.start.time,
     },
     end: {
-      date: dates.end.date
-        ? dates.end.date.toString().split("T")[0]
-        : null,
+      date: dates.end.date ? dates.end.date.toString().split("T")[0] : null,
       time: dates.end.time,
     },
     hasEndDate: dates.hasEndDate,
@@ -189,7 +191,8 @@ export default function ResourceDetailsLayout() {
   -------------------------------------------------- */
   return (
     <>
-      <Page title={
+      <Page
+        title={
           <InlineStack gap="500" blockAlign="center">
             <Button
               icon={ArrowLeftIcon}
@@ -199,17 +202,23 @@ export default function ResourceDetailsLayout() {
             <Text variant="headingLg" as="h2">
               Scarcity Timer
             </Text>
+            {status === "draft" ? (
+              <Badge tone="info">Draft</Badge>
+            ) : (
+              <Badge tone="success">Active</Badge>
+            )}
           </InlineStack>
-        }>
+        }
+      >
         <Box paddingBlockEnd="600">
           <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="400">
             <BlockStack gap="400">
-              <ScarcityTimer
-                value={timerConfig}
-                onChange={setTimerConfig}
-              />
+              <ScarcityTimer value={timerConfig} onChange={setTimerConfig} />
 
-              <Colabssiblecom title="Before timer expires" icon={CircleLeftIcon}>
+              <Colabssiblecom
+                title="Before timer expires"
+                icon={CircleLeftIcon}
+              >
                 <TimerMessageField
                   title="Timer Message"
                   value={timerText}
@@ -217,7 +226,10 @@ export default function ResourceDetailsLayout() {
                 />
               </Colabssiblecom>
 
-              <Colabssiblecom title="After timer expires" icon={CircleRightIcon}>
+              <Colabssiblecom
+                title="After timer expires"
+                icon={CircleRightIcon}
+              >
                 <TimerMessageField
                   title="Expired Message"
                   value={expiredMessage}
@@ -231,7 +243,7 @@ export default function ResourceDetailsLayout() {
                 />
               </Colabssiblecom>
 
-              <Colabssiblecom title="Activation time" icon={CircleRightIcon}>
+              <Colabssiblecom title="Active dates" icon={CalendarTimeIcon}>
                 <TimerDateAndTime
                   value={activeDates}
                   onChange={setActiveDates}
@@ -240,16 +252,29 @@ export default function ResourceDetailsLayout() {
             </BlockStack>
 
             <BlockStack>
-              <Card>
-                <Box padding="400">
-                  <Select
-                    label="Status"
-                    options={statusOptions}
-                    value={status}
-                    onChange={setStatus}
-                  />
-                </Box>
-              </Card>
+              {status == "active" ? (
+                <Card>
+                  <Box padding="400">
+                    <Select
+                      label="Status"
+                      options={statusOptions}
+                      value={status}
+                      onChange={setStatus}
+                    />
+                  </Box>
+                </Card>
+              ) : (
+                <Banner title="This timer is currently paused" tone="warning">
+                  <Box padding="400">
+                    <Select
+                      label="Status"
+                      options={statusOptions}
+                      value={status}
+                      onChange={setStatus}
+                    />
+                  </Box>
+                </Banner>
+              )}
             </BlockStack>
           </InlineGrid>
         </Box>

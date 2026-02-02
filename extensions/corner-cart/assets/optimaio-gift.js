@@ -169,7 +169,7 @@ cartDrawer.insertAdjacentHTML(
     <div class="optimaio-gift-popup__backdrop"></div>
     <div class="optimaio-gift-popup__inner">
       <h3>🎁 Choose Your Free Gifts</h3>
-      <p>Select up to <span id="optimaio-max-gifts">1</span> gifts:</p>
+      <p class="popup-sub-title">Select up to <span id="optimaio-max-gifts">1</span> gifts:</p>
       <div id="optimaio-gift-options"></div>
       <p id="optimaio-gift-error" style="color:#c00;font-size:13px;display:none;"></p>
       <div class="optimaio-gift-popup__actions">

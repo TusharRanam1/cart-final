@@ -3,7 +3,7 @@
     (Blue-accented modern theme)
   ===================================================== */
 
-  #optimaio-cart-drawer[data-optimaio-theme="theme2"] {
+  body[data-optimaio-theme="theme2"] {
     /* ---------- Base Colors ---------- */
     --bg-primary: #f4f8ff;           /* soft blue-tinted background */
     --bg-secondary: #ffffff;

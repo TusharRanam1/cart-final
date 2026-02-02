@@ -1,4 +1,4 @@
-#optimaio-cart-drawer[data-optimaio-theme="theme4"] {
+body[data-optimaio-theme="theme4"] {
     /* ---------- Base Colors ---------- */
     --bg-primary: #f6f4f1;        /* warm cream background */
     --bg-secondary: #ffffff;     /* card background */

@@ -1,29 +1,236 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
+
   provider = "prisma-client-js"
+
+}
+ 
+datasource db {
+
+  provider = "postgresql"
+
+  url      = env("DATABASE_URL")
+
+}
+ 
+model Session {
+
+  id            String    @id
+
+  shop          String
+
+  state         String
+
+  isOnline      Boolean   @default(false)
+
+  scope         String?
+
+  expires       DateTime?
+
+  accessToken   String
+
+  userId        BigInt?
+
+  firstName     String?
+
+  lastName      String?
+
+  email         String?
+
+  accountOwner  Boolean   @default(false)
+
+  locale        String?
+
+  collaborator  Boolean?  @default(false)
+
+  emailVerified Boolean?  @default(false)
+
+}
+ 
+model CartEvent {
+
+  id         String   @id @default(cuid())
+
+  cartId     String
+
+  storeId    String
+
+  customerId String?
+
+  eventType  String
+
+  payload    Json
+
+  createdAt  DateTime @default(now())
+ 
+  @@index([cartId])
+
+  @@index([eventType])
+
+  @@index([storeId])
+
+  @@index([customerId])
+
+}
+ 
+model CartSession {
+
+  id         String   @id @default(cuid())
+
+  storeId    String
+
+  cartId     String
+
+  cartKey    String?
+
+  customerId String?
+
+  email      String?
+
+  createdAt  DateTime @default(now())
+
+  updatedAt  DateTime @updatedAt
+ 
+  @@index([storeId])
+
+  @@index([customerId])
+
+  @@index([cartId])
+
+}
+ 
+ 
+model StoreInfo {
+
+  id                BigInt   @id @default(autoincrement())
+
+  storeId           String   @unique
+ 
+  firstInstalledAt  DateTime
+
+  lastInstalledAt   DateTime
+ 
+  trialUsed         Boolean  @default(false)
+
+  trialEndsAt       DateTime?   // 👈 ADD THIS
+ 
+  createdAt         DateTime? @default(now())
+
+  updatedAt         DateTime? @default(now())
+ 
+  @@map("stores_info")
+
+}
+ 
+ 
+model BillingOrder {
+
+  id            BigInt   @id @default(autoincrement())
+
+  storeId       String
+
+  orderId       String   @unique
+
+  orderNumber   String
+
+  currency      String
+
+  totalItems    Int
+
+  discountName  String?
+
+  createdAt     DateTime
+
+  insertedAt    DateTime? @default(now())
+ 
+  @@index([storeId, createdAt], name: "idx_billing_orders_store_cycle")
+
+  @@map("billing_orders")
+
+}
+ 
+ 
+model StoreUsage {
+
+  id                BigInt   @id @default(autoincrement())
+ 
+  storeId           String   
+
+  subscriptionId    String
+
+  subscriptionLineItemId String?
+ 
+  cycleStart        DateTime
+
+  cycleEnd          DateTime
+ 
+  ordersCount       Int      @default(0)
+
+  usageAmount       Decimal  @default(0)
+
+  appliedTier       String   
+
+  status            String   @default("OPEN") // OPEN | CLOSED
+ 
+  createdAt         DateTime @default(now())
+
+  updatedAt         DateTime @updatedAt
+ 
+  @@index([storeId])
+
+  @@index([storeId, cycleStart])
+
+  @@map("store_usage")
+
+}
+ 
+enum DiscountType {
+
+  FLAT
+
+  PERCENT
+
+}
+ 
+model StoreDiscount {
+
+  id            BigInt   @id @default(autoincrement())
+
+  storeId       String
+ 
+  discountType  DiscountType
+
+  discountValue Int        // FLAT = dollars, PERCENT = %
+ 
+  // 👇 cycle restriction
+
+  cycleStart    DateTime
+
+  cycleEnd      DateTime
+ 
+  // 👇 lifecycle control
+
+  isActive      Boolean    @default(true)
+
+  usedAt        DateTime?  // set once applied (optional)
+ 
+  usageType     String     @default("ONE_TIME")
+
+  // ONE_TIME | REUSABLE
+
+  usageCount    Int        @default(0)
+
+  //count one time usage
+ 
+  createdAt     DateTime   @default(now())
+
+  updatedAt     DateTime   @updatedAt
+ 
+  @@index([storeId, isActive])
+
+  @@index([storeId, cycleStart, cycleEnd])
+
+  @@map("store_discounts")
+
 }
 
-model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
-}
+ 

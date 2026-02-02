@@ -3,7 +3,7 @@
    Default soft pink & black theme
 ===================================================== */
 
-#optimaio-cart-drawer[data-optimaio-theme="theme1"] {
+body[data-optimaio-theme="theme1"] {
   /* ---------- Base Colors ---------- */
   --bg-primary: #fff7f8;
   --bg-secondary: #ffffff;

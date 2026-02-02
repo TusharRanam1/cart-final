@@ -1,9 +1,17 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { log } from "./logger/logger.server";
+import { withRequestContext } from "./logger/requestContext.server";
+import { getRequestId } from "./logger/requestId.server";
 
-/* Helper: Save metafield */
+/* ------------------ Helper: Save metafield ------------------ */
 async function setMetafield(admin, shopId, key, valueObj, ownerId = shopId) {
-  console.log("🧠 setMetafield called:", { key, ownerId, valueObj });
+  log.debug("setMetafield called", {
+    event: "metafield.set.called",
+    key,
+    ownerId,
+  });
+
   const mutation = `
     mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
@@ -12,6 +20,7 @@ async function setMetafield(admin, shopId, key, valueObj, ownerId = shopId) {
       }
     }
   `;
+
   const variables = {
     metafields: [
       {
@@ -23,41 +32,46 @@ async function setMetafield(admin, shopId, key, valueObj, ownerId = shopId) {
       },
     ],
   };
+
   const res = await admin.graphql(mutation, { variables });
   const data = await res.json();
-  if (data?.data?.metafieldsSet?.userErrors?.length) {
-    console.error("❌ Metafield save error:", data.data.metafieldsSet.userErrors);
+
+  const errors = data?.data?.metafieldsSet?.userErrors;
+  if (errors?.length) {
+    log.error("Metafield save failed", {
+      event: "metafield.save.failed",
+      key,
+      ownerId,
+      errors,
+    });
   } else {
-    console.log("✅ Metafield saved successfully:", data.data.metafieldsSet.metafields);
+    log.info("Metafield saved successfully", {
+      event: "metafield.save.success",
+      key,
+      ownerId,
+      metafieldId: data?.data?.metafieldsSet?.metafields?.[0]?.id,
+    });
   }
+
   return data;
 }
 
-/* 🔍 Helper: Find this app’s DiscountAutomaticNode dynamically */
+/* ------------------ Helper: Find Discount Node ------------------ */
 async function getDiscountNodeId(admin) {
   const query = `
-    query GetAllDiscounts {
+    query {
       discountNodes(first: 20) {
         edges {
           node {
             id
             discount {
-              __typename
               ... on DiscountAutomaticApp {
                 title
-                status
-                appDiscountType {
-                  appKey
-                  functionId
-                }
+                appDiscountType { functionId }
               }
               ... on DiscountCodeApp {
                 title
-                status
-                appDiscountType {
-                  appKey
-                  functionId
-                }
+                appDiscountType { functionId }
               }
             }
           }
@@ -69,158 +83,206 @@ async function getDiscountNodeId(admin) {
   try {
     const res = await admin.graphql(query);
     const data = await res.json();
-
     const nodes = data?.data?.discountNodes?.edges || [];
-    console.log("🔍 Discount nodes found:", JSON.stringify(nodes, null, 2));
 
-    // Match your app’s unique function ID or title
-    const targetFunctionId = process.env.BXGY_FUNCTION_ID;
+    const targetFunctionId = process.env.BXGY_FUNCTION_ID?.toLowerCase();
 
-   const foundNode =
-  nodes.find((edge) => {
-    const d = edge.node.discount;
-    if (!d) return false;
-    const funcId = d.appDiscountType?.functionId?.toLowerCase?.() || "";
-    return funcId === targetFunctionId.toLowerCase();
-  }) ||
-  nodes.find((edge) => {
-    const d = edge.node.discount;
-    const title = (d?.title || "").toLowerCase();
-    return title.includes("buy x get y");
-  });
+    const found =
+      nodes.find(
+        (e) =>
+          e.node.discount?.appDiscountType?.functionId?.toLowerCase() ===
+          targetFunctionId,
+      ) ||
+      nodes.find((e) =>
+        (e.node.discount?.title || "").toLowerCase().includes("buy x get y"),
+      );
 
-    if (foundNode) {
-      console.log("✅ Found Discount Node:", foundNode.node.id);
-      return foundNode.node.id;
+    if (found) {
+      log.info("BXGY discount node resolved", {
+        event: "bxgy.discount.node.found",
+        discountNodeId: found.node.id,
+      });
+      return found.node.id;
     }
 
-    console.warn("⚠️ No Discount Node found for this app.");
+    log.warn("BXGY discount node not found", {
+      event: "bxgy.discount.node.missing",
+    });
     return null;
   } catch (err) {
-    console.error("❌ Error fetching Discount Node:", err);
+    log.error("Failed to fetch discount nodes", {
+      event: "discount.node.fetch.error",
+      error: err,
+    });
     return null;
   }
 }
 
-
+/* ------------------ Main Action ------------------ */
 export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  const requestId = getRequestId(request);
 
-  // 1️⃣ Get shopId
-  const shopRes = await admin.graphql(`{ shop { id } }`);
-  const shopData = await shopRes.json();
-  const shopId = shopData.data.shop.id;
-
-  // 2️⃣ Fetch existing campaigns metafield
-  const query = `
-    query {
-      shop {
-        metafield(namespace: "optimaio_cart", key: "campaigns") {
-          id
-          value
-        }
-      }
-    }
-  `;
-  const existingRes = await admin.graphql(query);
-  const existingData = await existingRes.json();
-  const existingMetafield = existingData.data.shop.metafield;
-
-  let campaigns = [];
-  if (existingMetafield?.value) {
+  return withRequestContext({ requestId }, async () => {
     try {
-      campaigns = JSON.parse(existingMetafield.value).campaigns || [];
-    } catch (err) {
-      console.error("⚠️ Parse error:", err);
-      campaigns = [];
-    }
-  }
+      log.info("Campaign save request received", {
+        event: "campaign.save.received",
+      });
 
-  // 3️⃣ Get the new campaign from frontend
-  const newCampaign = await request.json();
-  console.log("🆕 Incoming campaign:", newCampaign);
-  console.log("🆕 Incoming campaign date and time:", newCampaign.activeDates);
+      const { admin } = await authenticate.admin(request);
 
-  // 4️⃣ Update or add campaign
-  const idx = campaigns.findIndex((c) => c.id === newCampaign.id);
-  if (idx > -1) {
-    campaigns[idx] = newCampaign;
-  } else {
-    newCampaign.priority = newCampaign.priority ?? campaigns.length + 1;
-    campaigns.push(newCampaign);
-  }
+      /* 1️⃣ Get shopId */
+      const shopRes = await admin.graphql(`{ shop { id } }`);
+      const shopData = await shopRes.json();
+      const shopId = shopData?.data?.shop?.id;
 
-  // 5️⃣ Normalize priorities
-  const normalizedCampaigns = campaigns.map((c, i) => ({
-    ...c,
-    priority: typeof c.priority === "number" ? c.priority : i + 1,
-  }));
+      if (!shopId) {
+        log.error("Shop ID not resolved", {
+          event: "campaign.save.shop_missing",
+        });
+        return json({ ok: false, error: "Shop not found" }, { status: 500 });
+      }
 
-  await setMetafield(admin, shopId, "campaigns", { campaigns: normalizedCampaigns });
-
-  // 6️⃣ Get Discount Node dynamically (important!)
-  const discountNodeId = await getDiscountNodeId(admin);
-  if (!discountNodeId) {
-    console.warn("⚠️ No DiscountAutomaticNode found. Skipping bxgy_top_collection update.");
-    return json({ ok: true, warning: "Discount node not found", campaigns });
-  }
-
-  // 7️⃣ Gather active BXGY campaigns
-  const activeBxgys = campaigns.filter(
-    (c) => c.campaignType === "bxgy" && c.status === "active"
-  );
-
-  if (activeBxgys.length > 0) {
-    const allCollections = [];
-    const activeCampaignsInfo = [];
-
-    for (const campaign of activeBxgys) {
-      const goal = campaign.goals?.[0];
-      // ✅ Include both "collection" and "spend_any_collection"
-      if (
-        (goal?.bxgyMode === "collection" || goal?.bxgyMode === "spend_any_collection") &&
-        goal.buyCollections?.length > 0
-      ) {
-        for (const col of goal.buyCollections) {
-          if (!allCollections.includes(col.id)) {
-            allCollections.push(col.id);
+      /* 2️⃣ Load existing campaigns */
+      const existingRes = await admin.graphql(`
+        query {
+          shop {
+            metafield(namespace: "optimaio_cart", key: "campaigns") {
+              value
+            }
           }
         }
+      `);
+
+      const existingData = await existingRes.json();
+      let campaigns = [];
+
+      if (existingData?.data?.shop?.metafield?.value) {
+        try {
+          campaigns =
+            JSON.parse(existingData.data.shop.metafield.value).campaigns || [];
+        } catch (err) {
+          log.warn("Failed to parse campaigns metafield", {
+            event: "campaign.parse.failed",
+            error: err,
+          });
+        }
       }
 
-      activeCampaignsInfo.push({
-        id: campaign.id,
-        name: campaign.campaignName,
-        priority: campaign.priority,
+      /* 3️⃣ Incoming campaign */
+      const newCampaign = await request.json();
+
+      log.debug("Incoming campaign payload", {
+        event: "campaign.incoming",
+        campaignId: newCampaign.id,
       });
+
+      /* 4️⃣ Upsert campaign */
+      const idx = campaigns.findIndex((c) => c.id === newCampaign.id);
+      if (idx > -1) {
+        campaigns[idx] = newCampaign;
+      } else {
+        newCampaign.priority ??= campaigns.length + 1;
+        campaigns.push(newCampaign);
+      }
+
+      /* 5️⃣ Normalize priorities */
+      const normalizedCampaigns = campaigns.map((c, i) => ({
+        ...c,
+        priority: typeof c.priority === "number" ? c.priority : i + 1,
+      }));
+
+      await setMetafield(admin, shopId, "campaigns", {
+        campaigns: normalizedCampaigns,
+      });
+
+      /* 6️⃣ BXGY sync */
+      const discountNodeId = await getDiscountNodeId(admin);
+      if (!discountNodeId) {
+        return json({
+          ok: true,
+          warning: "Discount node not found",
+          campaigns: normalizedCampaigns,
+        });
+      }
+
+      const activeBxgys = normalizedCampaigns.filter(
+        (c) => c.campaignType === "bxgy" && c.status === "active",
+      );
+
+      if (activeBxgys.length > 0) {
+        const allCollections = [];
+        const activeCampaignsInfo = [];
+
+        for (const c of activeBxgys) {
+          const goal = c.goals?.[0];
+          if (["collection", "spend_any_collection"].includes(goal?.bxgyMode)) {
+            goal.buyCollections?.forEach((col) => {
+              if (!allCollections.includes(col.id)) {
+                allCollections.push(col.id);
+              }
+            });
+          }
+
+          activeCampaignsInfo.push({
+            id: c.id,
+            name: c.campaignName,
+            priority: c.priority,
+          });
+        }
+
+        const topCampaign = [...activeBxgys].sort(
+          (a, b) => a.priority - b.priority,
+        )[0];
+
+        await setMetafield(
+          admin,
+          shopId,
+          "bxgy_top_collection",
+          {
+            collectionIds: allCollections,
+            activeCampaigns: activeCampaignsInfo,
+            topCampaign: {
+              id: topCampaign.id,
+              name: topCampaign.campaignName,
+              priority: topCampaign.priority,
+            },
+          },
+          discountNodeId,
+        );
+      } else {
+        await setMetafield(
+          admin,
+          shopId,
+          "bxgy_top_collection",
+          {
+            collectionIds: [],
+            activeCampaigns: [],
+            topCampaign: null,
+          },
+          discountNodeId,
+        );
+      }
+
+      log.info("Campaign saved successfully", {
+        event: "campaign.save.success",
+        campaignId: newCampaign.id,
+      });
+
+      return json({
+        ok: true,
+        campaign: newCampaign,
+        campaigns: normalizedCampaigns,
+      });
+    } catch (err) {
+      log.error("Campaign save failed", {
+        event: "campaign.save.exception",
+        error: err,
+      });
+
+      return json(
+        { ok: false, error: "Internal server error" },
+        { status: 500 },
+      );
     }
-
-    // Find top priority active BXGY (lowest number = highest priority)
-    const topCampaign = activeBxgys.sort((a, b) => a.priority - b.priority)[0];
-
-    const valueObj = {
-      collectionIds: allCollections,
-      activeCampaigns: activeCampaignsInfo,
-      topCampaign: {
-        id: topCampaign.id,
-        name: topCampaign.campaignName,
-        priority: topCampaign.priority,
-      },
-    };
-
-    console.log("📦 Updating metafield with all active BXGY collections:", valueObj);
-
-    await setMetafield(admin, shopId, "bxgy_top_collection", valueObj, discountNodeId);
-  } else {
-    console.log("🕸 No active BXGY campaigns found — clearing metafield.");
-    await setMetafield(
-      admin,
-      shopId,
-      "bxgy_top_collection",
-      { collectionIds: [], activeCampaigns: [], topCampaign: null },
-      discountNodeId
-    );
-  }
-
-  return json({ ok: true, campaign: newCampaign, campaigns });
+  });
 };

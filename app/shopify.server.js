@@ -7,6 +7,9 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 import "dotenv/config";
+import { upsertStoreInfo } from "./models/storeInfo.server";
+import { ensureBxgyDiscountExists } from "./models/bxgyDiscount.server";
+import { ensureTieredDiscountExists } from "./models/tieredDiscount.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -16,10 +19,13 @@ const shopify = shopifyApp({
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
-    hooks: {
+  hooks: {
     afterAuth: async ({ admin, session }) => {
       console.log("App installed for:", session.shop);
-
+      // ✅ Save store info on install / reinstall
+      await upsertStoreInfo(session.shop);
+      await ensureBxgyDiscountExists(admin, session.shop);
+      await ensureTieredDiscountExists(admin, session.shop);
     },
   },
   distribution: AppDistribution.AppStore,

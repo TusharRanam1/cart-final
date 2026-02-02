@@ -25,7 +25,13 @@
       const eligibleCount = state.gifts.eligible.length;
 
       if (state.state === "locked") {
-        return `<button class="optimaio-offer-btn locked" disabled>🔒 Locked</button>`;
+        return `<button
+  class="optimaio-offer-btn locked"
+  data-action="view-store"
+  data-campaign="${campaignId}">
+  👀 View in store
+</button>
+`;
       }
 
       if (selectedCount < maxQty) {
@@ -456,7 +462,7 @@
     ----------------------------------------------------------- */
     document.addEventListener("click", async e => {
       const btn = e.target.closest(".optimaio-offer-btn");
-      if (!btn || btn.disabled) return;
+      if (!btn) return;
     
       const action = btn.dataset.action;
       const campaignId = btn.dataset.campaign;
