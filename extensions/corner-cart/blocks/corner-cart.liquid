@@ -6,11 +6,13 @@
 <script>
   window.__OPTIMAIO_CART__ = {
     settings: {{ shop.metafields.optimaio_cart.cart_settings.value | json }},
-    timer: {{ shop.metafields.optimaio_cart.cart_timer_settings.value | json }}
+    timer: {{ shop.metafields.optimaio_cart.cart_timer_settings.value | json }},
+    upsell: {{ shop.metafields.optimaio_cart.upsell_settings.value | json }}
   };
 
   console.log("🧾 Optimaio Cart Metafields:", window.__OPTIMAIO_CART__);
 </script>
+
 
 <script>
   function normalizeCampaignResponse(raw) {
@@ -354,6 +356,7 @@ if (AUTO_REFRESH_TIMER > 0) {
 <script src="{{ 'optimaio.js' | asset_url }}" defer></script>
  
  {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
+ {{ 'optimaio-theme0-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme1-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme2-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme3-color.css' | asset_url | stylesheet_tag }}
@@ -418,18 +421,35 @@ roots.forEach(root => {
           root.style.background = bannerStyle.solidColor;
         }
       });
-{% comment %}   
+
       /* ----------------------------
          3️⃣ Apply color variables
       ---------------------------- */
       const colors = settings.colors || {};
       const variableMap = {
-        buttonColor: "--btn-bg",
-        primaryColor: "--accent",
-        secondaryColor: "--header-bg",
-        progressStart: "--accent",
-        progressEnd: "--progress-inactive"
+        buttonColor: "--accent",
+        primaryColor: "--text-primary",
+        secondaryColor: "--text-secondary"
+        
       };
+
+      /* ----------------------------
+   Progress gradient (OPT-IN)
+---------------------------- */
+roots.forEach(root => {
+  // reset first
+  root.style.removeProperty("--progress-start");
+  root.style.removeProperty("--progress-end");
+  root.removeAttribute("data-progress-gradient");
+
+  // apply only if BOTH provided
+  if (colors.progressStart && colors.progressEnd) {
+    root.style.setProperty("--progress-start", colors.progressStart);
+    root.style.setProperty("--progress-end", colors.progressEnd);
+    root.setAttribute("data-progress-gradient", "true");
+  }
+});
+
   
       roots.forEach(root => {
         Object.entries(variableMap).forEach(([key, cssVar]) => {
@@ -438,7 +458,7 @@ roots.forEach(root => {
           }
         });
       });
-   {% endcomment %}
+
       /* ----------------------------
          4️⃣ Custom CSS (TOP priority)
       ---------------------------- */
@@ -525,7 +545,7 @@ roots.forEach(root => {
       <circle cx="12" cy="12" r="9"/>
       <path d="M12 7v5l3 2"/>
       </svg>
-    <span class="optimaio-countdown-label"> Offer ends in</span>
+      <span class="optimaio-countdown-label" id="optimaio-countdown-label"></span>
     <span id="optimaio-countdown-time">
       <span class="optimaio-time"><strong>00</strong>d :</span>
       <span class="optimaio-time"><strong>00</strong>h :</span>
@@ -597,6 +617,10 @@ roots.forEach(root => {
     <div class="optimaio-recommendations-list"></div>
   </div>
 
+  <div class="optimaio-cart-drawer-oneclick-upsell">
+    <p class="optimaio-oneclick-upsell-title">You might also like</p>
+  <div id="optimaio-oneclick-upsell" class="optimaio-oneclick-upsell"></div>
+   </div>
   
  
   <!-- Footer Summary -->
@@ -688,7 +712,228 @@ roots.forEach(root => {
 
   
 </div>
+{% comment %} <script>
+  (function () {
+    if (window.__OPTIMAIO_ONECLICK_INIT__) return;
+    window.__OPTIMAIO_ONECLICK_INIT__ = true;
+  
+    function extractVariantId(gid) {
+      return gid?.split("/").pop();
+    }
+  
+    function formatMoney(price) {
+      try {
+        return Shopify.formatMoney(
+          Math.round(Number(price) * 100),
+          window.__SHOP_MONEY_FORMAT__
+        );
+      } catch {
+        return price;
+      }
+    }
+  
+    async function getCart() {
+      return window.OptimaioCartController?.getCart();
+    }
+  
+    async function addUpsell(variantId, hide) {
+      await fetch("/cart/add.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: variantId,
+          quantity: 1,
+          properties: hide ? { __optimaio_hidden_upsell__: true } : {}
+        })
+      });
+    }
+  
+    async function removeUpsell(cart, variantId) {
+      const item = cart.items.find(i => i.variant_id == variantId);
+      if (!item) return;
+  
+      await fetch("/cart/change.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.key, quantity: 0 })
+      });
+    }
+  
+    async function render() {
+      const upsell = window.__OPTIMAIO_CART__?.upsell?.oneClickUpsell;
+      if (!upsell?.enabled) return;
+  
+      const container = document.getElementById("optimaio-oneclick-upsell");
+      if (!container) return;
+  
+      const p = upsell.product;
+      if (!p?.availableForSale) {
+        container.innerHTML = "";
+        return;
+      }
+  
+      const variantId = extractVariantId(p.id);
+      if (!variantId) return;
+  
+      const cart = await getCart();
+      const inCart = cart?.items?.some(i => i.variant_id == variantId);
+  
+      const isCheckbox = upsell.ctaType === "checkbox";
+      const isHidden = upsell.showInCartList === false;
+  
+      container.innerHTML = `
+        <div class="optimaio-mini-upsell">
+          ${upsell.showProductImage !== false ? `
+            <img src="${p.image?.url || ""}" class="optimaio-mini-upsell__image">
+          ` : ""}
+  
+          <div class="optimaio-mini-upsell__info">
+            <div class="optimaio-mini-upsell__title">${p.productTitle}</div>
+            <div class="optimaio-mini-upsell__price">${formatMoney(p.price)}</div>
+          </div>
+  
+          ${
+            isCheckbox
+              ? `<label class="optimaio-upsell-checkbox">
+                  <input type="checkbox" ${inCart ? "checked" : ""}>
+                  <span>${inCart ? "Added" : "Add"}</span>
+                </label>`
+              : `<button class="optimaio-mini-upsell__btn">
+                  ${inCart ? "Remove" : "Add"}
+                </button>`
+          }
+        </div>
+      `;
+  
+      if (isCheckbox) {
+        const cb = container.querySelector("input");
+        cb.onchange = async () => {
+          cb.disabled = true;
+  
+          const freshCart = await getCart();
+          const exists = freshCart.items.some(i => i.variant_id == variantId);
+  
+          if (cb.checked && !exists) {
+            await addUpsell(variantId, isHidden);
+          }
+  
+          if (!cb.checked && exists) {
+            await removeUpsell(freshCart, variantId);
+          }
+  
+          await window.OptimaioCartController.refresh();
+          cb.disabled = false;
+        };
+      } else {
+        const btn = container.querySelector("button");
+        btn.onclick = async () => {
+          btn.disabled = true;
+  
+          const freshCart = await getCart();
+          const exists = freshCart.items.some(i => i.variant_id == variantId);
+  
+          exists
+            ? await removeUpsell(freshCart, variantId)
+            : await addUpsell(variantId, isHidden);
+  
+          await window.OptimaioCartController.refresh();
+          btn.disabled = false;
+        };
+      }
+    }
+  
+    document.addEventListener("DOMContentLoaded", render);
+    document.addEventListener("optimaio:open", render);
+    document.addEventListener("optimaio:cart:updated", render);
+  })();
+  </script> {% endcomment %}
+  
 
+  
+
+  
+  <style>
+    .optimaio-cart-drawer-oneclick-upsell {
+      padding: 0 12px 8px;
+      margin: 0 12px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+    .optimaio-oneclick-upsell-title {
+      font-size: 12px;
+      margin: 2px 0 0;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .optimaio-oneclick-upsell {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    
+    .optimaio-mini-upsell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 8px;
+    }
+    
+    .optimaio-mini-upsell__image {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+    
+    .optimaio-mini-upsell__info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .optimaio-mini-upsell__text {
+      font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    margin: 0;
+    color: var(--text-primary);
+    }
+
+    .optimaio-mini-upsell__title {
+      font-size: 12px;
+      font-weight: 600;
+      margin: 0;
+      line-height: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .optimaio-mini-upsell__price {
+      font-size: 12px;
+      color: var(--text-primary);
+      margin: 2px 0 0;
+    }
+    
+    .optimaio-mini-upsell__btn {
+      background: var(--accent);
+    color: var(--accent-contrast);
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    }
+    
+    .optimaio-mini-upsell__add:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    </style>
+    
+  
 
 <script>
   (function () {
@@ -734,6 +979,39 @@ roots.forEach(root => {
   (function () {
     const sheet = document.getElementById("optimaio-sheet");
     const title = document.getElementById("optimaio-sheet-title");
+
+    /* =============================
+   FEATURE FLAGS
+============================= */
+const settings = window.__OPTIMAIO_CART__?.settings || {};
+const features = settings.cartFeatures || {};
+
+const NOTES_ENABLED = features.orderNotes !== false;
+const DISCOUNT_ENABLED = features.discountCodeInput !== false;
+
+/* =============================
+   VISIBILITY CONTROL
+============================= */
+if (!NOTES_ENABLED) {
+  document
+    .querySelectorAll('.optimaio-action-btn[data-sheet="note"]')
+    .forEach(el => el.style.display = "none");
+
+  sheet
+    .querySelectorAll('.optimaio-sheet-content[data-content="note"]')
+    .forEach(el => el.remove());
+}
+
+if (!DISCOUNT_ENABLED) {
+  document
+    .querySelectorAll('.optimaio-action-btn[data-sheet="discount"]')
+    .forEach(el => el.style.display = "none");
+
+  sheet
+    .querySelectorAll('.optimaio-sheet-content[data-content="discount"]')
+    .forEach(el => el.remove());
+}
+
   
     if (!sheet) return;
   
@@ -745,6 +1023,10 @@ roots.forEach(root => {
       if (!actionBtn) return;
   
       const type = actionBtn.dataset.sheet;
+
+      if (type === "note" && !NOTES_ENABLED) return;
+if (type === "discount" && !DISCOUNT_ENABLED) return;
+
   
       // Set title
       title.textContent =
@@ -779,6 +1061,8 @@ roots.forEach(root => {
     document.addEventListener("click", async e => {
       const saveBtn = e.target.closest(".optimaio-sheet-primary");
       if (!saveBtn) return;
+      if (!NOTES_ENABLED) return;
+
   
       const textarea = sheet.querySelector(".optimaio-note-textarea");
       if (!textarea) return;
@@ -810,6 +1094,8 @@ roots.forEach(root => {
     document.addEventListener("click", e => {
       const applyBtn = e.target.closest(".optimaio-discount-apply");
       if (!applyBtn) return;
+      if (!DISCOUNT_ENABLED) return;
+
   
       const input = sheet.querySelector(".optimaio-discount-input");
       if (!input || !input.value.trim()) return;
@@ -917,6 +1203,34 @@ roots.forEach(root => {
   (function () {
     const data = window.__OPTIMAIO_CART__ || {};
     const timer = data.timer;
+
+        /* ----------------------------
+       🧹 CLEAR CART HELPER
+    ---------------------------- */
+    async function optimaioClearCart() {
+      try {
+        await fetch("/cart/clear.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+
+        console.log("🧹 Optimaio: Cart cleared by timer");
+
+        // Refresh Optimaio UI
+        window.OptimaioCartController?.refresh();
+
+        // Optional lifecycle event
+        document.dispatchEvent(
+          new CustomEvent("optimaio:cart:cleared", {
+            detail: { source: "timer" }
+          })
+        );
+
+      } catch (err) {
+        console.error("❌ Optimaio: Failed to clear cart", err);
+      }
+    }
+
   
     const container = document.getElementById("optimaio-countdown");
 
@@ -927,6 +1241,11 @@ if (!timer || timer.status !== "active") {
 
 // ✅ ADD THIS LINE
 container.style.display = "flex";
+
+const label = container.querySelector("#optimaio-countdown-label");
+if (label) {
+  label.textContent = timer.timerText || "Offer ends in";
+}
 
   
     const boxes = container.querySelectorAll(".optimaio-time strong");
@@ -998,44 +1317,75 @@ container.style.display = "flex";
     /* ----------------------------
        COUNTDOWN LOOP
     ---------------------------- */
-    function updateCountdown() {
-      let diff = endTime - Date.now();
+    let interval; // 👈 declare upfront
+
+function updateCountdown() {
+  let diff = endTime - Date.now();
+
+  if (diff <= 0) {
+    if (interval) clearInterval(interval);
   
-      if (diff <= 0) {
-        clearInterval(interval);
-        localStorage.removeItem(STORAGE_KEY);
+    const isDuration = timer.timerConfig.timerMode === "duration";
+    const shouldLoop =
+      isDuration && timer.afterAction === "refresh";
   
-        if (timer.expiredMessage) {
-          container.textContent = timer.expiredMessage;
-        } else {
-          container.style.display = "none";
-        }
+    /* 🔁 LOOP ONLY */
+    if (shouldLoop) {
+      const d = timer.timerConfig.duration;
+      const newStart = Date.now();
   
-        if (timer.afterAction === "refresh") {
-          setTimeout(() => location.reload(), 800);
-        }
-        return;
-      }
+      localStorage.setItem(STORAGE_KEY, newStart);
   
-      const days = Math.floor(diff / 86400000);
-      diff -= days * 86400000;
+      endTime =
+        newStart +
+        (+d.hours * 3600000) +
+        (+d.minutes * 60000) +
+        (+d.seconds * 1000);
   
-      const hours = Math.floor(diff / 3600000);
-      diff -= hours * 3600000;
-  
-      const minutes = Math.floor(diff / 60000);
-      diff -= minutes * 60000;
-  
-      const seconds = Math.floor(diff / 1000);
-  
-      boxes[0].textContent = pad(days);
-      boxes[1].textContent = pad(hours);
-      boxes[2].textContent = pad(minutes);
-      boxes[3].textContent = pad(seconds);
+      updateCountdown();
+      interval = setInterval(updateCountdown, 1000);
+      return;
     }
   
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
+    /* 🧹 CLEAR CART */
+    if (timer.afterAction === "clear_cart") {
+      optimaioClearCart();
+    }
+  
+    /* ❌ FINAL EXPIRE */
+    localStorage.removeItem(STORAGE_KEY);
+  
+    if (timer.expiredMessage) {
+      container.textContent = timer.expiredMessage;
+    } else {
+      container.style.display = "none";
+    }
+  
+    return;
+  }
+  
+  
+  const days = Math.floor(diff / 86400000);
+  diff -= days * 86400000;
+
+  const hours = Math.floor(diff / 3600000);
+  diff -= hours * 3600000;
+
+  const minutes = Math.floor(diff / 60000);
+  diff -= minutes * 60000;
+
+  const seconds = Math.floor(diff / 1000);
+
+  boxes[0].textContent = pad(days);
+  boxes[1].textContent = pad(hours);
+  boxes[2].textContent = pad(minutes);
+  boxes[3].textContent = pad(seconds);
+}
+
+// ✅ start loop AFTER declaration
+updateCountdown();
+interval = setInterval(updateCountdown, 1000);
+
   })();
   </script>
   

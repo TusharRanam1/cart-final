@@ -422,7 +422,9 @@ function stopCartLoading() {
  
       emptyState.style.display = "none";
  
-      const itemsHTML = cart.items.map(item => `
+      const itemsHTML = cart.items
+      .filter(item => !item.properties?.__optimaio_hidden_upsell__)
+      .map(item => `
         <div
   class="optimaio-cart-item-card
     ${(item.properties?.isBXGYGift || item.properties?.isFreeGift) ? 'optimaio-free-gift' : ''}"
@@ -698,6 +700,192 @@ if (overridden) return;
   });
 }
 
+
+    /* ------------------------------
+       One Click Upsellll Javascript
+    ------------------------------ */
+
+
+(function () {
+  if (window.__OPTIMAIO_ONECLICK_INIT__) return;
+  window.__OPTIMAIO_ONECLICK_INIT__ = true;
+
+  function resolveUpsellText(text, productTitle, amount) {
+    if (!text || !text.trim()) return null;
+  
+    return text
+      .replace(/{{\s*title\s*}}/gi, productTitle)
+      .replace(/{{\s*amount\s*}}/gi, amount);
+  }
+  
+
+  function extractVariantId(gid) {
+    return gid?.split("/").pop();
+  }
+
+  function formatMoney(price) {
+    try {
+      return Shopify.formatMoney(
+        Math.round(Number(price) * 100),
+        window.__SHOP_MONEY_FORMAT__
+      );
+    } catch {
+      return price;
+    }
+  }
+
+  async function getCart() {
+    return window.OptimaioCartController?.getCart();
+  }
+
+  async function addUpsell(variantId, hide) {
+    await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: variantId,
+        quantity: 1,
+        properties: {
+          __optimaio_upsell__: true,
+          ...(hide ? { __optimaio_hidden_upsell__: true } : {})
+        }
+      })
+    });
+  }
+  
+
+  async function removeUpsell(cart, variantId) {
+    const item = cart.items.find(
+      i =>
+        i.variant_id == variantId &&
+      i.properties?.__optimaio_upsell__ === true
+    );
+    
+    if (!item) return;
+
+    await fetch("/cart/change.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.key, quantity: 0 })
+    });
+  }
+
+  async function render() {
+    const upsell = window.__OPTIMAIO_CART__?.upsell?.oneClickUpsell;
+    if (!upsell?.enabled) return;
+
+    const container = document.getElementById("optimaio-oneclick-upsell");
+    if (!container) return;
+
+    const p = upsell.product;
+    if (!p?.availableForSale) {
+      container.innerHTML = "";
+      return;
+    }
+
+    const variantId = extractVariantId(p.id);
+    if (!variantId) return;
+
+    const cart = await getCart();
+    const inUpsellCart = cart?.items?.some(
+      i =>
+        i.variant_id == variantId &&
+        i.properties?.__optimaio_upsell__ === true
+    );
+
+    const isCheckbox = upsell.ctaType === "checkbox";
+    const isHidden = upsell.showInCartList === false;
+
+    container.innerHTML = `
+      <div class="optimaio-mini-upsell">
+        ${upsell.showProductImage !== false ? `
+          <img src="${p.image?.url || ""}" class="optimaio-mini-upsell__image">
+        ` : ""}
+
+        ${(() => {
+  const resolvedText = resolveUpsellText(
+    upsell.upsellText,
+    p.productTitle,
+    formatMoney(p.price)
+  );
+
+  return `
+    <div class="optimaio-mini-upsell__info">
+      ${
+        resolvedText
+          ? `<div class="optimaio-mini-upsell__text">${resolvedText}</div>`
+          : `
+              <div class="optimaio-mini-upsell__title">${p.productTitle}</div>
+              <div class="optimaio-mini-upsell__price">${formatMoney(p.price)}</div>
+            `
+      }
+    </div>
+  `;
+})()}
+
+
+        ${
+          isCheckbox
+            ? `<label class="optimaio-upsell-checkbox">
+                <input type="checkbox" ${inUpsellCart ? "checked" : ""}>
+              </label>`
+            : `<button class="optimaio-mini-upsell__btn">
+                ${inUpsellCart ? "Remove" : "Add"}
+              </button>`
+        }
+      </div>
+    `;
+
+    if (isCheckbox) {
+      const cb = container.querySelector("input");
+      cb.onchange = async () => {
+        cb.disabled = true;
+
+        const freshCart = await getCart();
+        const exists = freshCart.items.some(
+          i =>
+            i.variant_id == variantId &&
+            i.properties?.__optimaio_upsell__ === true
+        );
+
+        if (cb.checked && !exists) {
+          await addUpsell(variantId, isHidden);
+        }
+
+        if (!cb.checked && exists) {
+          await removeUpsell(freshCart, variantId);
+        }
+
+        await window.OptimaioCartController.refresh();
+        cb.disabled = false;
+      };
+    } else {
+      const btn = container.querySelector("button");
+      btn.onclick = async () => {
+        btn.disabled = true;
+
+        const freshCart = await getCart();
+        const exists = freshCart.items.some(
+          i =>
+            i.variant_id == variantId &&
+            i.properties?.__optimaio_upsell__ === true
+        );
+        
+
+        exists
+          ? await removeUpsell(freshCart, variantId)
+          : await addUpsell(variantId, isHidden);
+
+        await window.OptimaioCartController.refresh();
+        btn.disabled = false;
+      };
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", render);
+  document.addEventListener("optimaio:open", render);
+  document.addEventListener("optimaio:cart:updated", render);
+})();
  
     // --------------------------------------------------------------
 // PART 3 / 3 — Recommendations + ATC Interceptor + Observers
@@ -741,10 +929,12 @@ function getCurrentCardIndex(container) {
 /* ------------------------------------------------------
    INIT AUTO SCROLL (START FROM GIVEN INDEX)
 ------------------------------------------------------*/
-function initAutoScrollRecommendations(startIndex = 0) {
+function initAutoScrollRecommendations(startIndex = 0, layout = "carousel") {
   const container = document.querySelector(".optimaio-recommendations-list");
   if (!container) return;
  
+
+  
   // Stop old interval
   if (recAutoScrollInterval) clearInterval(recAutoScrollInterval);
  
@@ -792,10 +982,13 @@ function initAutoScrollRecommendations(startIndex = 0) {
     }, 3000);
   }
  
-  container.addEventListener("scroll", pauseScroll);
-  container.addEventListener("touchstart", pauseScroll);
-  container.addEventListener("touchmove", pauseScroll);
-  container.addEventListener("mousedown", pauseScroll);
+  if (!container.classList.contains("layout-card")) {
+    container.addEventListener("scroll", pauseScroll);
+    container.addEventListener("touchstart", pauseScroll);
+    container.addEventListener("touchmove", pauseScroll);
+    container.addEventListener("mousedown", pauseScroll);
+  }
+  
  
   /* ------------------------------------------------------
      INTERSECTION OBSERVER
@@ -815,6 +1008,13 @@ function initAutoScrollRecommendations(startIndex = 0) {
    LOAD RECOMMENDATIONS + MAINTAIN POSITION
 ------------------------------------------------------*/
 async function loadRecsForCart(cartItems) {
+  const normalUpsell = window.__OPTIMAIO_CART__?.upsell?.normalUpsell;
+  if (!normalUpsell?.enabled) return;
+
+  const mode = normalUpsell.upsellType || "complementary";
+  const limit = normalUpsell.relatedProductCount || 4;
+  const layout = normalUpsell?.displayLayout || "carousel";
+
   const container = document.querySelector(".optimaio-recommendations-list");
   if (!container) return;
 
@@ -825,7 +1025,6 @@ async function loadRecsForCart(cartItems) {
       '<p class="optimaio-reco-title">You might also like</p>'
     );
   }
-  
 
   // Keep scroll position
   const currentIndex = getCurrentCardIndex(container);
@@ -833,29 +1032,68 @@ async function loadRecsForCart(cartItems) {
   // Products already in cart (exclude these)
   const cartProductIds = new Set(cartItems.map(i => i.product_id));
 
-  // Fetch recommendations for ALL cart products
-  const responses = await Promise.all(
-    cartItems.map(item =>
-      fetch(
-        `/recommendations/products.json?product_id=${item.product_id}&intent=complementary&limit=4`
-      ).then(r => r.json())
-    )
-  );
-
-  // Merge + dedupe + exclude cart items
-  const merged = [];
+  let merged = [];
   const seen = new Set();
 
-  responses.forEach(r => {
-    r.products.forEach(p => {
-      if (cartProductIds.has(p.id)) return; // ❌ already in cart
-      if (seen.has(p.id)) return;           // ❌ duplicate
-      seen.add(p.id);
-      merged.push(p);
-    });
-  });
+  /* ----------------------------------
+     🔀 DATA SOURCE SWITCH
+  ---------------------------------- */
 
-  // Hide section if nothing valid
+  if (mode === "manual") {
+    // ✅ MANUAL PRODUCTS
+    const variants = normalUpsell.selectedVariants || [];
+
+    variants.forEach(v => {
+      const variantId = Number(v.id.split("/").pop());
+    
+      if (!v.availableForSale) return;
+    
+      if (seen.has(variantId)) return;
+    
+      const alreadyInCart = cartItems.some(
+        item => item.variant_id === variantId
+      );
+      if (alreadyInCart) return;
+    
+      seen.add(variantId);
+    
+      merged.push({
+        id: variantId,
+        title: v.productTitle,
+        featured_image: v.image?.url || "",
+        variants: [{ id: variantId, price: Number(v.price) * 100 }]
+      });
+    });
+    
+
+    merged = merged.slice(0, limit);
+
+  } else {
+    // ✅ SHOPIFY RECOMMENDATIONS
+    const intent = mode === "related" ? "related" : "complementary";
+
+    const responses = await Promise.all(
+      cartItems.map(item =>
+        fetch(
+          `/recommendations/products.json?product_id=${item.product_id}&intent=${intent}&limit=${limit}`
+        ).then(r => r.json())
+      )
+    );
+
+    responses.forEach(r => {
+      r.products.forEach(p => {
+        if (cartProductIds.has(p.id)) return;
+        if (seen.has(p.id)) return;
+
+        seen.add(p.id);
+        merged.push(p);
+      });
+    });
+  }
+
+  /* ----------------------------------
+     ⛔ NOTHING FOUND
+  ---------------------------------- */
   if (!merged.length) {
     container.innerHTML = "";
     if (section) section.style.display = "none";
@@ -864,9 +1102,11 @@ async function loadRecsForCart(cartItems) {
 
   if (section) section.style.display = "";
 
-  // Render
+  /* ----------------------------------
+     🎨 RENDER (UNCHANGED)
+  ---------------------------------- */
   container.innerHTML = merged.map(p => `
-    <div class="optimaio-recommendation-card">
+    <div class="optimaio-recommendation-card" data-url="${p.url || (p.productHandle ? `/products/${p.productHandle}` : '')}">
       <div class="optimaio-rec-image">
         <img src="${p.featured_image}" alt="${p.title}">
       </div>
@@ -883,26 +1123,86 @@ async function loadRecsForCart(cartItems) {
       </button>
     </div>
   `).join("");
+  container.className = `optimaio-recommendations-list layout-${layout}`;
 
-  // Bind ATC
-  container.querySelectorAll(".optimaio-rec-add").forEach(btn => {
-    btn.onclick = async () => {
-      btn.disabled = true;
 
-      await fetch("/cart/add.js", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: btn.dataset.id, quantity: 1 })
-      });
+  if (layout === "card" && section && !section.querySelector(".optimaio-rec-nav")) {
+    section.insertAdjacentHTML("beforeend", `
+      <div class="optimaio-rec-nav">
+        <button class="rec-prev">‹</button>
+        <button class="rec-next">›</button>
+      </div>
+    `);
+  }
 
-      window.OptimaioCartController.refresh();
-      btn.disabled = false;
+  
+  if (layout === "card") {
+    const prev = section.querySelector(".rec-prev");
+    const next = section.querySelector(".rec-next");
+    const cards = container.querySelectorAll(".optimaio-recommendation-card");
+  
+    let index = currentIndex;
+  
+    prev.onclick = () => {
+      index = Math.max(0, index - 1);
+      container.scrollTo({ left: cards[index].offsetLeft, behavior: "smooth" });
     };
-  });
+  
+    next.onclick = () => {
+      index = Math.min(cards.length - 1, index + 1);
+      container.scrollTo({ left: cards[index].offsetLeft, behavior: "smooth" });
+    };
+  }
+  
 
-  // Restart auto-scroll
-  initAutoScrollRecommendations(currentIndex);
+  /* ----------------------------------
+     🛒 ATC (UNCHANGED)
+  ---------------------------------- */
+  const ctaAction = normalUpsell?.ctaAction || "add_to_cart";
+
+container.querySelectorAll(".optimaio-rec-add").forEach(btn => {
+  btn.onclick = async () => {
+    const variantId = btn.dataset.id;
+
+    // 🔀 REDIRECT MODE
+    if (ctaAction === "redirect_to_product") {
+      const card = btn.closest(".optimaio-recommendation-card");
+      const url = card?.dataset?.url;
+if (url) window.location.href = url;
+
+      return;
+    }
+
+    // 🛒 ADD TO CART MODE (default)
+    btn.disabled = true;
+
+    await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: variantId, quantity: 1 })
+    });
+
+    window.OptimaioCartController.refresh();
+    btn.disabled = false;
+  };
+});
+
+
+  // Restart auto-scroll (UNCHANGED)
+  /* ----------------------------------
+   🎛️ LAYOUT BEHAVIOR CONTROL
+---------------------------------- */
+if (layout === "carousel") {
+  initAutoScrollRecommendations(currentIndex, layout);
+} else {
+  if (recAutoScrollInterval) {
+    clearInterval(recAutoScrollInterval);
+    recAutoScrollInterval = null;
+  }
 }
+
+}
+
 
  
  

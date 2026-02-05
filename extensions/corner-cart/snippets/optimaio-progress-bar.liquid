@@ -8,6 +8,15 @@
   if (window.__OptimaioProMilestonesInit) return;
   window.__OptimaioProMilestonesInit = true;
 
+  /* =============================
+   CONFETTI FEATURE FLAG
+============================= */
+const offerAnimation =
+  window.__OPTIMAIO_CART__?.settings?.cartFeatures?.offerAnimation;
+
+const CONFETTI_ENABLED = offerAnimation === "confetti";
+
+
   // 🔥 Warm campaign cache early (safe, deduped)
 if (typeof getCampaignData === "function") {
   getCampaignData().catch(() => null);
@@ -184,7 +193,9 @@ function ensureDrawerConfettiCanvas() {
 let drawerConfettiInstance = null;
 
 function fireConfetti() {
+  if (!CONFETTI_ENABLED) return;
   if (!isDrawerOpen()) return;
+
 
   const canvas = ensureDrawerConfettiCanvas();
   if (!canvas) return;

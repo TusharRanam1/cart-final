@@ -29,7 +29,7 @@
   class="optimaio-offer-btn locked"
   data-action="view-store"
   data-campaign="${campaignId}">
-  👀 View in store
+  View in store
 </button>
 `;
       }
@@ -64,11 +64,8 @@
         `;
       }
 
-      return `
-        <button class="optimaio-offer-btn success" disabled>
-          ✅ Unlocked (${maxQty}/${maxQty})
-        </button>
-      `;
+      return "";
+
     }
 
     /* -----------------------------------------------------------
@@ -215,7 +212,10 @@
 
     
       // Close
-      popup.querySelector(".optimaio-offer-cancel").onclick = () => popup.remove();
+      popup.querySelector(".optimaio-offer-cancel").onclick = () => {
+        popup.remove();
+      };
+      
     
       // Selection logic
       const chosen = new Set(selected);
@@ -251,7 +251,7 @@
       // Confirm
       popup.querySelector(".optimaio-offer-confirm").onclick = async () => {
         popup.remove();
-    
+      
         document.dispatchEvent(
           new CustomEvent("optimaio:offer:confirm", {
             detail: {
@@ -261,7 +261,13 @@
             }
           })
         );
+      
+        // 🔓 Allow engine AFTER cart updates start
+        {% comment %} setTimeout(() => {
+          window.__optimaioPopupOpen = false;
+        }, 0); {% endcomment %}
       };
+      
     }
     
 
@@ -300,6 +306,9 @@
         console.error("renderOfferPopup is not defined");
         return;
       }
+
+      // 🔒 Tell engine a popup is open
+window.__optimaioPopupOpen = true;
     
       // 4️⃣ Open popup
       renderOfferPopup({
@@ -311,6 +320,109 @@
       });
     }
     
+    
+
+    function renderViewGiftPopup({ products }) {
+      document.getElementById("optimaio-view-gift-popup")?.remove();
+    
+      const popup = document.createElement("div");
+      popup.id = "optimaio-view-gift-popup";
+      popup.className = "optimaio-offer-popup";
+    
+      const isMultiple = products.length > 1;
+    
+      popup.innerHTML = `
+  <div class="optimaio-offer-popup__backdrop"></div>
+
+  <div class="optimaio-offer-popup__card">
+    <div class="optimaio-offer-popup__header view-gift-header">
+      <div class="optimaio-offer-popup__icon">
+      <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 12v10H4V12"/>
+  <path d="M2 7h20v5H2z"/>
+  <path d="M12 22V7"/>
+  <path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C10 2 12 7 12 7z"/>
+  <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7z"/>
+  </svg>
+      </div>
+      <h3>Free Gift</h3>
+
+      <button class="optimaio-popup-close" aria-label="Close">✕</button>
+
+      <p>
+        ${isMultiple
+          ? "These gifts unlock once cart conditions are met"
+          : "This gift unlocks once cart conditions are met"}
+      </p>
+    </div>
+
+    
+          <div class="optimaio-offer-popup__list">
+            ${products.map(p => `
+              <div class="optimaio-offer-popup__row">
+                <img src="${p.image?.url || p.featured_image?.url || p.image}" />
+    
+                <div class="optimaio-offer-popup__info">
+                  <p class="title">${p.productTitle || p.title}</p>
+                  <p class="price">
+                    <span class="strike">INR ${p.price}</span>
+                    <span class="free">Free</span>
+                  </p>
+                </div>
+    
+                <button
+                  class="optimaio-view-gift-btn"
+                  data-handle="${p.productHandle}">
+                  Show Gift
+                </button>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    
+      const cartDrawer =
+        document.querySelector("#optimaio-cart-drawer") ||
+        document.querySelector(".optimaio-cart-drawer");
+    
+      if (!cartDrawer) return;
+    
+      cartDrawer.appendChild(popup);
+
+      popup.querySelector(".optimaio-popup-close").onclick = () => {
+        popup.remove();
+      };      
+    
+      // Close on backdrop
+      popup.querySelector(".optimaio-offer-popup__backdrop").onclick = () => {
+        popup.remove();
+      };
+    
+      // Redirect buttons
+      popup.querySelectorAll(".optimaio-view-gift-btn").forEach(btn => {
+        btn.onclick = () => {
+          const handle = btn.dataset.handle;
+          window.location.href = `/products/${handle}`;
+        };
+      });
+    }
+
+    
+    function resolveGiftProducts(campaign) {
+      // Tiered campaign → free_product goal
+      if (campaign.campaignType === "tiered") {
+        const goal = campaign.goals.find(g => g.type === "free_product");
+        return goal?.products || [];
+      }
+    
+      // BXGY campaign → getProducts
+      if (campaign.campaignType === "bxgy") {
+        const goal = campaign.goals?.[0];
+        return goal?.getProducts || [];
+      }
+    
+      return [];
+    }
     
     
 
@@ -468,17 +580,25 @@
       const campaignId = btn.dataset.campaign;
       if (!action || !campaignId) return;
     
-      // 🔒 Get already-calculated state
-      const state = window.OptimaioGiftState?.campaigns?.[campaignId];
-      if (!state || state.state === "locked") return;
-    
-      // 📦 Get campaign definition
       const data = await window.getCampaignData();
       const campaigns = Array.isArray(data) ? data : data.campaigns;
       const campaign = campaigns.find(c => c.id === campaignId);
       if (!campaign) return;
     
-      // 🎁 OPEN YOUR CUSTOM POPUP (NO ENGINE RUN)
+      const state = window.OptimaioGiftState?.campaigns?.[campaignId];
+    
+      /* 🔒 VIEW IN STORE (LOCKED) */
+      if (action === "view-store") {
+        const products = resolveGiftProducts(campaign);
+        if (!products.length) return;
+    
+        renderViewGiftPopup({ products });
+        return;
+      }
+    
+      /* 🎁 NORMAL CLAIM / CHANGE FLOW */
+      if (!state) return;
+    
       openOfferGiftPopup({
         campaign,
         campaignState: state
@@ -575,6 +695,8 @@
       document.dispatchEvent(
         new CustomEvent("optimaio:cart:refresh")
       );
+       // 🔓 RELEASE HERE — AFTER EVERYTHING
+  window.__optimaioPopupOpen = false;
     });
     </script>
     
@@ -599,6 +721,8 @@
     justify-content: center;
     gap: 6px;
     transition: all 0.2s ease;
+    background: transparent;
+    border: 1px solid var(--accent);
   }
 
   /* Primary – Claim Gift */
@@ -621,18 +745,29 @@
     cursor: default;
   }
 
-  /* Locked – Styled but disabled */
-  .optimaio-offer-btn.locked {
-    background: #f4f4f4;
-    color: #888;
-    cursor: not-allowed;
-    opacity: 1; /* 👈 keep readable */
-  }
+
 
   /* Disabled state (generic) */
   .optimaio-offer-btn:disabled {
     cursor: not-allowed;
   }
+
+  .optimaio-view-gift-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    white-space: nowrap;
+  }
+  
+  .optimaio-view-gift-btn:hover {
+    transform: translateY(-1px);
+  }
+  
 
   /* Hover effects (only when enabled) */
   .optimaio-offer-btn:not(:disabled):hover {
@@ -717,9 +852,27 @@
     font-weight: 700;
   }
 
+
+  .optimaio-popup-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #666;
+  }
+  
+  .optimaio-popup-close:hover {
+    color: #000;
+  }
+  
   .optimaio-offer-popup__header p {
     font-size: 14px;
     color: var(--text-secondary);
+    margin:  5px;
   }
 
   .optimaio-offer-popup__count {
@@ -805,7 +958,7 @@
 
   .strike {
     text-decoration: line-through;
-    color: #aaa;
+    color: var(--text-muted)  ;
     margin-right: 6px;
   }
 

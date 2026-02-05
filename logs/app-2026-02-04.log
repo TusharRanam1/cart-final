@@ -1,0 +1,112 @@
+{"event":"products.fetch.received","level":"info","message":"Fetch products request received","requestId":"fed94eb8-0260-472e-9bb1-29c1a175738f","timestamp":"2026-02-04T06:47:20.721Z"}
+{"event":"products.fetch.start","level":"info","message":"Fetching products from Shopify","requestId":"fed94eb8-0260-472e-9bb1-29c1a175738f","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T06:47:20.803Z"}
+{"count":17,"event":"products.fetch.success","level":"info","message":"Products fetched successfully","requestId":"fed94eb8-0260-472e-9bb1-29c1a175738f","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T06:47:21.402Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.038Z"}
+{"event":"redis.client.init","host":"redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com","level":"info","message":"Initializing Redis client","port":16663,"requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.046Z"}
+{"event":"redis.connect.start","level":"info","message":"Connecting to Redis","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.049Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.277Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.277Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.295Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.296Z"}
+{"event":"redis.connect.success","level":"info","message":"Redis connection established","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.296Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.296Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"d9e2a869-bf47-4da5-bf53-2a3e98721c01","timestamp":"2026-02-04T07:00:00.310Z"}
+{"event":"billing.cron.triggered","level":"info","message":"Store expiry cron triggered","requestId":"0a5857ef-ee6c-4e06-bb1b-1e87fcea1c93","timestamp":"2026-02-04T07:30:00.121Z"}
+{"event":"billing.cron.scan.started","level":"info","maxPerRun":10,"message":"Store expiry scan started","requestId":"0a5857ef-ee6c-4e06-bb1b-1e87fcea1c93","timestamp":"2026-02-04T07:30:00.122Z"}
+{"event":"billing.orders.cron.triggered","level":"info","message":"Order-based billing cron triggered","requestId":"7c76d9c9-6b3b-4ff1-ba02-2f4187eb6899","timestamp":"2026-02-04T07:30:00.124Z"}
+{"event":"billing.orders.scan.started","level":"info","message":"Order-based billing scan started","requestId":"7c76d9c9-6b3b-4ff1-ba02-2f4187eb6899","timestamp":"2026-02-04T07:30:00.124Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"7b1738f5-a2b8-443a-8435-f3985946ad95","timestamp":"2026-02-04T07:30:00.126Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"7b1738f5-a2b8-443a-8435-f3985946ad95","timestamp":"2026-02-04T07:30:00.126Z"}
+{"event":"billing.cron.no_expired_store","level":"info","message":"Next billing cycle has not expired yet","nextExpiry":"2026-02-05T06:31:22.283Z","nextShop":"bb-basic-optimaio-cart.myshopify.com","requestId":"0a5857ef-ee6c-4e06-bb1b-1e87fcea1c93","timestamp":"2026-02-04T07:30:07.495Z"}
+{"event":"billing.cron.scan.completed","level":"info","message":"Store expiry scan completed","processed":0,"requestId":"0a5857ef-ee6c-4e06-bb1b-1e87fcea1c93","timestamp":"2026-02-04T07:30:07.495Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"7b1738f5-a2b8-443a-8435-f3985946ad95","timestamp":"2026-02-04T07:30:07.496Z"}
+{"event":"billing.orders.zero","level":"info","message":"No orders for store, skipping upgrade","requestId":"7c76d9c9-6b3b-4ff1-ba02-2f4187eb6899","storeId":"basic-optimaio-cart.myshopify.com","timestamp":"2026-02-04T07:30:22.398Z"}
+{"event":"billing.orders.scan.completed","level":"info","message":"Order-based billing scan completed","requestId":"7c76d9c9-6b3b-4ff1-ba02-2f4187eb6899","timestamp":"2026-02-04T07:30:31.497Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.045Z"}
+{"event":"redis.client.init","host":"redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com","level":"info","message":"Initializing Redis client","port":16663,"requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.055Z"}
+{"event":"redis.connect.start","level":"info","message":"Connecting to Redis","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.058Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.083Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.083Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.098Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.098Z"}
+{"event":"redis.connect.success","level":"info","message":"Redis connection established","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.098Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.099Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"4acd9d0c-b4fe-49c1-8bc9-67d28d9b5d13","timestamp":"2026-02-04T08:00:00.111Z"}
+{"event":"campaigns.webhook.received","level":"info","message":"Webhook received","requestId":"72c764dd-b7e4-5064-88c6-8cb18182ea06","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:10:32.199Z","topic":"SHOP_UPDATE"}
+{"event":"campaigns.no_change","level":"info","message":"No campaign changes detected","requestId":"72c764dd-b7e4-5064-88c6-8cb18182ea06","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:10:32.692Z"}
+{"event":"campaigns.webhook.received","level":"info","message":"Webhook received","requestId":"c9b34162-56fc-56c6-888f-469be4bf0f76","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:12:29.901Z","topic":"SHOP_UPDATE"}
+{"event":"campaigns.no_change","level":"info","message":"No campaign changes detected","requestId":"c9b34162-56fc-56c6-888f-469be4bf0f76","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:12:30.402Z"}
+{"event":"campaigns.webhook.received","level":"info","message":"Webhook received","requestId":"95a7404d-b19f-53c9-b9ee-ead683e55a4e","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:15:47.824Z","topic":"SHOP_UPDATE"}
+{"event":"campaigns.no_change","level":"info","message":"No campaign changes detected","requestId":"95a7404d-b19f-53c9-b9ee-ead683e55a4e","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:15:48.464Z"}
+{"event":"timer.fetch.received","level":"info","message":"Fetch cart timer request received","requestId":"5ed9655d-6937-425a-bcb0-39b8b5ce69ef","timestamp":"2026-02-04T09:20:04.020Z"}
+{"event":"timer.fetch.start","level":"info","message":"Fetching cart timer metafield","requestId":"5ed9655d-6937-425a-bcb0-39b8b5ce69ef","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:20:04.693Z"}
+{"event":"timer.fetch.success","level":"info","message":"Cart timer fetched successfully","requestId":"5ed9655d-6937-425a-bcb0-39b8b5ce69ef","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:20:05.547Z"}
+{"event":"timer.fetch.received","level":"info","message":"Fetch cart timer request received","requestId":"56bafd20-8071-452f-9a11-380c84f803d0","timestamp":"2026-02-04T09:20:05.808Z"}
+{"event":"timer.fetch.start","level":"info","message":"Fetching cart timer metafield","requestId":"56bafd20-8071-452f-9a11-380c84f803d0","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:20:05.873Z"}
+{"event":"timer.fetch.success","level":"info","message":"Cart timer fetched successfully","requestId":"56bafd20-8071-452f-9a11-380c84f803d0","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T09:20:06.680Z"}
+{"event":"billing.cron.triggered","level":"info","message":"Store expiry cron triggered","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:00.154Z"}
+{"event":"redis.client.init","host":"redis-16663.crce179.ap-south-1-1.ec2.cloud.redislabs.com","level":"info","message":"Initializing Redis client","port":16663,"requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:00.159Z"}
+{"event":"redis.connect.start","level":"info","message":"Connecting to Redis","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:00.161Z"}
+{"event":"billing.orders.cron.triggered","level":"info","message":"Order-based billing cron triggered","requestId":"1d97f03e-1102-4634-9fcc-c92952c87bfe","timestamp":"2026-02-04T09:30:00.165Z"}
+{"event":"billing.orders.scan.started","level":"info","message":"Order-based billing scan started","requestId":"1d97f03e-1102-4634-9fcc-c92952c87bfe","timestamp":"2026-02-04T09:30:00.166Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"429e4a2a-71b8-498c-9374-b39d488208d2","timestamp":"2026-02-04T09:30:00.169Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"429e4a2a-71b8-498c-9374-b39d488208d2","timestamp":"2026-02-04T09:30:00.169Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:08.114Z"}
+{"event":"redis.socket.connected","level":"info","message":"Redis socket connected","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:08.114Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"429e4a2a-71b8-498c-9374-b39d488208d2","timestamp":"2026-02-04T09:30:10.286Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:10.286Z"}
+{"event":"redis.client.ready","level":"info","message":"Redis client ready","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:10.286Z"}
+{"event":"redis.connect.success","level":"info","message":"Redis connection established","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:10.287Z"}
+{"event":"billing.cron.scan.started","level":"info","maxPerRun":10,"message":"Store expiry scan started","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:10.287Z"}
+{"event":"billing.orders.zero","level":"info","message":"No orders for store, skipping upgrade","requestId":"1d97f03e-1102-4634-9fcc-c92952c87bfe","storeId":"basic-optimaio-cart.myshopify.com","timestamp":"2026-02-04T09:30:13.283Z"}
+{"event":"billing.cron.no_expired_store","level":"info","message":"Next billing cycle has not expired yet","nextExpiry":"2026-02-05T06:31:22.283Z","nextShop":"bb-basic-optimaio-cart.myshopify.com","requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:13.284Z"}
+{"event":"billing.cron.scan.completed","level":"info","message":"Store expiry scan completed","processed":0,"requestId":"dd7bab0a-61f8-415c-a03b-f80116ee16f2","timestamp":"2026-02-04T09:30:13.284Z"}
+{"event":"billing.orders.scan.completed","level":"info","message":"Order-based billing scan completed","requestId":"1d97f03e-1102-4634-9fcc-c92952c87bfe","timestamp":"2026-02-04T09:30:14.440Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"03e0e18c-ffc0-46bf-b1ca-da21da5cb726","timestamp":"2026-02-04T10:00:00.036Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"03e0e18c-ffc0-46bf-b1ca-da21da5cb726","timestamp":"2026-02-04T10:00:00.037Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"03e0e18c-ffc0-46bf-b1ca-da21da5cb726","timestamp":"2026-02-04T10:00:00.048Z"}
+{"event":"billing.cron.triggered","level":"info","message":"Store expiry cron triggered","requestId":"e51e6a31-8e4c-4286-8c23-5a1478e18972","timestamp":"2026-02-04T10:30:00.073Z"}
+{"event":"billing.cron.scan.started","level":"info","maxPerRun":10,"message":"Store expiry scan started","requestId":"e51e6a31-8e4c-4286-8c23-5a1478e18972","timestamp":"2026-02-04T10:30:00.076Z"}
+{"event":"billing.orders.cron.triggered","level":"info","message":"Order-based billing cron triggered","requestId":"61b70653-f9cd-46d3-8abe-60885019df74","timestamp":"2026-02-04T10:30:00.078Z"}
+{"event":"billing.orders.scan.started","level":"info","message":"Order-based billing scan started","requestId":"61b70653-f9cd-46d3-8abe-60885019df74","timestamp":"2026-02-04T10:30:00.079Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"a9dffef8-2519-443d-a67a-743688b1c4f2","timestamp":"2026-02-04T10:30:00.081Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"a9dffef8-2519-443d-a67a-743688b1c4f2","timestamp":"2026-02-04T10:30:00.081Z"}
+{"event":"billing.cron.no_expired_store","level":"info","message":"Next billing cycle has not expired yet","nextExpiry":"2026-02-05T06:31:22.283Z","nextShop":"bb-basic-optimaio-cart.myshopify.com","requestId":"e51e6a31-8e4c-4286-8c23-5a1478e18972","timestamp":"2026-02-04T10:30:00.107Z"}
+{"event":"billing.cron.scan.completed","level":"info","message":"Store expiry scan completed","processed":0,"requestId":"e51e6a31-8e4c-4286-8c23-5a1478e18972","timestamp":"2026-02-04T10:30:00.108Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"a9dffef8-2519-443d-a67a-743688b1c4f2","timestamp":"2026-02-04T10:30:00.108Z"}
+{"event":"billing.orders.zero","level":"info","message":"No orders for store, skipping upgrade","requestId":"61b70653-f9cd-46d3-8abe-60885019df74","storeId":"basic-optimaio-cart.myshopify.com","timestamp":"2026-02-04T10:30:00.762Z"}
+{"event":"billing.orders.scan.completed","level":"info","message":"Order-based billing scan completed","requestId":"61b70653-f9cd-46d3-8abe-60885019df74","timestamp":"2026-02-04T10:30:00.779Z"}
+{"event":"products.fetch.received","level":"info","message":"Fetch products request received","requestId":"972a3d6d-02fc-406c-9edb-8eb19a836b38","timestamp":"2026-02-04T10:41:19.099Z"}
+{"event":"products.fetch.start","level":"info","message":"Fetching products from Shopify","requestId":"972a3d6d-02fc-406c-9edb-8eb19a836b38","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T10:41:21.572Z"}
+{"count":17,"event":"products.fetch.success","level":"info","message":"Products fetched successfully","requestId":"972a3d6d-02fc-406c-9edb-8eb19a836b38","shop":"plus-store-tushar-optimaio.myshopify.com","timestamp":"2026-02-04T10:41:27.522Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"7eb8dd34-63a7-4163-b128-c276a74674f5","timestamp":"2026-02-04T11:00:00.027Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"7eb8dd34-63a7-4163-b128-c276a74674f5","timestamp":"2026-02-04T11:00:00.028Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"7eb8dd34-63a7-4163-b128-c276a74674f5","timestamp":"2026-02-04T11:00:00.041Z"}
+{"event":"billing.cron.triggered","level":"info","message":"Store expiry cron triggered","requestId":"a6c81e2b-144a-4507-95d8-47c05eb860c9","timestamp":"2026-02-04T11:30:00.052Z"}
+{"event":"billing.cron.scan.started","level":"info","maxPerRun":10,"message":"Store expiry scan started","requestId":"a6c81e2b-144a-4507-95d8-47c05eb860c9","timestamp":"2026-02-04T11:30:00.053Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"9d895604-c6d8-4927-af97-0694a27c5f0b","timestamp":"2026-02-04T11:30:00.054Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"9d895604-c6d8-4927-af97-0694a27c5f0b","timestamp":"2026-02-04T11:30:00.054Z"}
+{"event":"billing.orders.cron.triggered","level":"info","message":"Order-based billing cron triggered","requestId":"c1927b95-deda-4d4a-88c2-37ab748a2616","timestamp":"2026-02-04T11:30:00.057Z"}
+{"event":"billing.orders.scan.started","level":"info","message":"Order-based billing scan started","requestId":"c1927b95-deda-4d4a-88c2-37ab748a2616","timestamp":"2026-02-04T11:30:00.057Z"}
+{"event":"billing.cron.no_expired_store","level":"info","message":"Next billing cycle has not expired yet","nextExpiry":"2026-02-05T06:31:22.283Z","nextShop":"bb-basic-optimaio-cart.myshopify.com","requestId":"a6c81e2b-144a-4507-95d8-47c05eb860c9","timestamp":"2026-02-04T11:30:00.069Z"}
+{"event":"billing.cron.scan.completed","level":"info","message":"Store expiry scan completed","processed":0,"requestId":"a6c81e2b-144a-4507-95d8-47c05eb860c9","timestamp":"2026-02-04T11:30:00.069Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"9d895604-c6d8-4927-af97-0694a27c5f0b","timestamp":"2026-02-04T11:30:00.069Z"}
+{"event":"billing.orders.zero","level":"info","message":"No orders for store, skipping upgrade","requestId":"c1927b95-deda-4d4a-88c2-37ab748a2616","storeId":"basic-optimaio-cart.myshopify.com","timestamp":"2026-02-04T11:30:00.275Z"}
+{"event":"billing.orders.scan.completed","level":"info","message":"Order-based billing scan completed","requestId":"c1927b95-deda-4d4a-88c2-37ab748a2616","timestamp":"2026-02-04T11:30:00.295Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"7d180368-c868-4336-9362-52cd44871143","timestamp":"2026-02-04T12:00:00.022Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"7d180368-c868-4336-9362-52cd44871143","timestamp":"2026-02-04T12:00:00.023Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"7d180368-c868-4336-9362-52cd44871143","timestamp":"2026-02-04T12:00:00.034Z"}
+{"event":"billing.cron.triggered","level":"info","message":"Store expiry cron triggered","requestId":"2a59a182-b54f-4c50-bfc5-591b5d87f351","timestamp":"2026-02-04T12:30:00.081Z"}
+{"event":"billing.cron.scan.started","level":"info","maxPerRun":10,"message":"Store expiry scan started","requestId":"2a59a182-b54f-4c50-bfc5-591b5d87f351","timestamp":"2026-02-04T12:30:00.082Z"}
+{"event":"billing.orders.cron.triggered","level":"info","message":"Order-based billing cron triggered","requestId":"b7a155ed-98a0-48a7-a702-0c82f5378e1d","timestamp":"2026-02-04T12:30:00.084Z"}
+{"event":"billing.orders.scan.started","level":"info","message":"Order-based billing scan started","requestId":"b7a155ed-98a0-48a7-a702-0c82f5378e1d","timestamp":"2026-02-04T12:30:00.084Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"2b22e4ee-c9b4-48fb-8c98-347f2286442d","timestamp":"2026-02-04T12:30:00.088Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"2b22e4ee-c9b4-48fb-8c98-347f2286442d","timestamp":"2026-02-04T12:30:00.088Z"}
+{"event":"billing.cron.no_expired_store","level":"info","message":"Next billing cycle has not expired yet","nextExpiry":"2026-02-05T06:31:22.283Z","nextShop":"bb-basic-optimaio-cart.myshopify.com","requestId":"2a59a182-b54f-4c50-bfc5-591b5d87f351","timestamp":"2026-02-04T12:30:00.098Z"}
+{"event":"billing.cron.scan.completed","level":"info","message":"Store expiry scan completed","processed":0,"requestId":"2a59a182-b54f-4c50-bfc5-591b5d87f351","timestamp":"2026-02-04T12:30:00.098Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"2b22e4ee-c9b4-48fb-8c98-347f2286442d","timestamp":"2026-02-04T12:30:00.100Z"}
+{"event":"billing.orders.zero","level":"info","message":"No orders for store, skipping upgrade","requestId":"b7a155ed-98a0-48a7-a702-0c82f5378e1d","storeId":"basic-optimaio-cart.myshopify.com","timestamp":"2026-02-04T12:30:00.726Z"}
+{"event":"billing.orders.scan.completed","level":"info","message":"Order-based billing scan completed","requestId":"b7a155ed-98a0-48a7-a702-0c82f5378e1d","timestamp":"2026-02-04T12:30:00.744Z"}
+{"event":"orders.flush.cron.triggered","level":"info","message":"Hourly order flush cron triggered","requestId":"fd04c754-d6a6-427f-84a7-8fa5f390613a","timestamp":"2026-02-04T13:00:00.037Z"}
+{"event":"orders.flush.scan.started","level":"info","message":"Order flush scan started","requestId":"fd04c754-d6a6-427f-84a7-8fa5f390613a","timestamp":"2026-02-04T13:00:00.038Z"}
+{"event":"orders.flush.queue.empty","level":"info","message":"No order queues found","requestId":"fd04c754-d6a6-427f-84a7-8fa5f390613a","timestamp":"2026-02-04T13:00:00.046Z"}

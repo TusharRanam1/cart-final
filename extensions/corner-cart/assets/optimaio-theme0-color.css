@@ -1,0 +1,39 @@
+body[data-optimaio-theme="theme0"] {
+    /* ---------- Base Colors ---------- */
+    --bg-primary: #ffffff;        /* pure white background */
+    --bg-secondary: #f7f7f7;      /* light card background */
+    --bg-soft: #efefef;           /* soft neutral surface */
+  
+    /* ---------- Borders & Shadow ---------- */
+    --border: #e6e6e6;            /* subtle neutral border */
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  
+    /* ---------- Text Colors ---------- */
+    --text-primary: #141414;      /* strong black text */
+    --text-secondary: #5c5c5c;    /* secondary gray text */
+    --text-muted: #8a8a8a;        /* muted gray */
+  
+    /* ---------- Accents ---------- */
+    --accent: #141414;            /* black accent */
+    --accent-soft: rgba(20, 20, 20, 0.12); /* soft black background */
+    --accent-contrast: #ffffff;
+  
+    /* ---------- CTA ---------- */
+    --cta-bg: #141414;
+    --cta-text: #ffffff;
+  
+    /* ---------- Progress ---------- */
+    --progress-inactive: #e0e0e0;
+  
+    /* ---------- Discounts ---------- */
+    --discount-text: #141414;
+  
+    /* ---------- Surfaces ---------- */
+    --surface-gradient: none;
+  }
+  
+  /* Progress fill – default (solid) */
+  body[data-optimaio-theme="theme0"] .optimaio-progress-fill {
+    background: var(--accent);
+  }
+  

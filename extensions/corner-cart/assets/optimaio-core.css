@@ -8,6 +8,81 @@
    Works with Dawn + OS 2.0 themes
 ===================================================== */
 
+
+.layout-card {
+  display: flex;
+  overflow: hidden;
+}
+
+.layout-list {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+/* ================================
+   CARD LAYOUT NAVIGATION
+================================ */
+
+.optimaio-cart-drawer__recommendations {
+  position: relative;
+}
+
+/* Navigation wrapper */
+.optimaio-rec-nav {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none; /* allow clicks only on buttons */
+  padding: 0 8px;
+}
+
+/* Buttons */
+.optimaio-rec-nav button {
+  pointer-events: all;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  color: #111;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+/* Hover */
+.optimaio-rec-nav button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+/* Disabled (optional future use) */
+.optimaio-rec-nav button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.optimaio-recommendations-list.layout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  overflow-x: hidden;
+  overflow-y: visible;
+  scroll-behavior: auto;
+}
 /* 1️⃣ Page context */
 body.optimaio-cart-page-context {
   overflow: auto !important;
@@ -393,6 +468,7 @@ body.optimaio-cart-open {
   transition: width .4s ease;
 }
 
+
 /* FORCE progress bar to animate correctly */
 .optimaio-progress-fill {
 
@@ -514,6 +590,7 @@ body.optimaio-cart-open {
 .optimaio-cart-item__title {
   font-weight: 600;
   margin: 0;
+  font-size: 14x;
   line-height: 1.4;
   flex: 1;
   white-space: normal;
@@ -697,8 +774,8 @@ body.optimaio-cart-open {
     border-radius: 6px;
   } */
   .optimaio-reco-title {
-    font-size: 14px;
-    margin: 4px 0 0;
+    font-size: 12px;
+    margin: 2px 0 0;
     color: var(--text-muted);
   }
 
@@ -716,8 +793,8 @@ body.optimaio-cart-open {
 }
 
 .optimaio-rec-image img {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 6px;
   object-fit: cover;
   display: block;
@@ -748,7 +825,7 @@ body.optimaio-cart-open {
 /* ========== Summary & Checkout ========== */
 .optimaio-cart-drawer__summary-checkout {
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
+  border: 1px solid var(--border);
   padding: 6px 12px;
   background: var(--bg-secondary);
   margin: 0 12px;
@@ -793,7 +870,7 @@ body.optimaio-cart-open {
   flex-shrink: 0;
   display: flex;
   justify-content: space-around;
-  border-top: 1px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--bg-secondary);
   padding: 10px;
   position: sticky;
@@ -987,7 +1064,7 @@ body.optimaio-cart-open {
 ============================================================ */
 
 #optimaio-gift-options {
-  border-top: 1px solid #eee;
+  border: 1px solid #eee;
   border-bottom: 1px solid #eee;
   overflow-y: auto;
   max-height: 45vh;
@@ -1143,6 +1220,7 @@ body.optimaio-cart-open {
   background: var(--bg-secondary);
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
 }
 
 .optimaio-announcement-viewport {
@@ -1343,3 +1421,12 @@ body.optimaio-cart-open {
 }
 
 
+
+/* Progress gradient – opt-in ONLY */
+[data-progress-gradient="true"] .optimaio-progress-fill {
+  background: linear-gradient(
+    90deg,
+    var(--progress-start),
+    var(--progress-end)
+  );
+}
