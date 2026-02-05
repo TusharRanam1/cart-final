@@ -38,3 +38,8 @@ body[data-optimaio-theme="theme1"] {
   /* ---------- Spinner ---------- */
   --spinner-color: #999;
 }
+
+  /* Progress fill – default (solid) */
+  .optimaio-progress-fill {
+    background: var(--accent);
+  }

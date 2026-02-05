@@ -1,9 +1,8 @@
 <script>
+  window.__SHOP_MONEY_FORMAT__ = '{{ shop.money_format | escape }}';
+  window.__SHOP_DOMAIN__ = '{{ shop.permanent_domain }}';
+  window.__OPTIMAIO_CURRENCIES__ = {{ shop.metafields.optimaio_cart.currencies.value | json }};
   window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
-  window.__SHOP_DOMAIN__ = "{{ shop.permanent_domain }}";
-</script>
-
-<script>
   window.__OPTIMAIO_CART__ = {
     settings: {{ shop.metafields.optimaio_cart.cart_settings.value | json }},
     timer: {{ shop.metafields.optimaio_cart.cart_timer_settings.value | json }},
@@ -13,15 +12,10 @@
   console.log("🧾 Optimaio Cart Metafields:", window.__OPTIMAIO_CART__);
 </script>
 
-
 <script>
   function normalizeCampaignResponse(raw) {
     // New API shape → { campaigns: { campaigns: [] } }
-    if (
-      raw &&
-      raw.campaigns &&
-      Array.isArray(raw.campaigns.campaigns)
-    ) {
+    if (raw && raw.campaigns && Array.isArray(raw.campaigns.campaigns)) {
       return { campaigns: raw.campaigns.campaigns };
     }
 
@@ -35,105 +29,20 @@
   }
 </script>
 
-
-{% comment %} <script>
-document.addEventListener("DOMContentLoaded", function() {
-
-  console.log("🟦 Testing CSS extraction using FAKE JSON…");
-
-  // FAKE CAMPAIGN DATA (edit this for testing)
-  const fakeCampaignData = {
-    campaigns: [
-      {
-        id: "test_campaign_1",
-        status: "active",
-        campaignType: "tiered",
-        trackType: "quantity",
-        goals: [
-          {
-            id: "g1",
-            type: "free_shipping",
-            target: 1,
-            giftTitleBefore: ".optimaio-progress-fill {background:red !important; }"
-          },
-          {
-            id: "g2",
-            type: "order_discount",
-            target: 2,
-            giftTitleBefore: ".optimaio-milestone-label { color: green !important; }"
-          }
-        ]
-      }
-    ]
-  };
-
-  /* ---------------------------
-     CSS INJECTION LOGIC
-  ----------------------------*/
-  function injectCSS(cssString) {
-    let style = document.getElementById("optimaio-test-css");
-    
-    if (!style) {
-      style = document.createElement("style");
-      style.id = "optimaio-test-css";
-      document.head.appendChild(style);
-    }
-
-    // Ensure CSS has !important where needed
-    cssString = cssString
-      .replace(/;(?![^{}]*})/g, " !important;")  
-      .trim();
-
-    style.textContent = cssString;
-  }
-
-  function testCSSFromFakeJSON(data) {
-    const active = data.campaigns?.find(c => c.status === "active");
-    if (!active) return console.warn("⚠ No active campaign in fake JSON");
-
-    let cssFound = [];
-
-    active.goals.forEach(goal => {
-      const css = goal.giftTitleBefore;
-
-      if (typeof css === "string" && css.includes("{") && css.includes("}")) {
-        cssFound.push(css);
-      }
-    });
-
-    if (!cssFound.length) {
-      console.warn("⚠ No CSS found in fake JSON");
-      return;
-    }
-
-    console.log("🎨 CSS found:", cssFound);
-
-    injectCSS(cssFound.join("\n"));
-
-    console.log("🎉 Fake JSON CSS applied successfully!");
-  }
-
-  // Run test
-  testCSSFromFakeJSON(fakeCampaignData);
-
-});
-</script> {% endcomment %}
-
 <script>
   /* ----------------------------------------------------
      🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE
      - In-memory caching ONLY
      - Single fetch lock
   ---------------------------------------------------- */
-  
+
   window.__OPTIMIAO_FETCH_STATE__ = {
-    data: null,        // cached campaign data
-    pending: null,     // shared fetch promise
-    lastFetch: 0,      // timestamp
-    TTL: 60000         // 👈 CACHE TIME IN MS (0 = ALWAYS FRESH)
+    data: null, // cached campaign data
+    pending: null, // shared fetch promise
+    lastFetch: 0, // timestamp
+    TTL: 60000, // 👈 CACHE TIME IN MS (0 = ALWAYS FRESH)
   };
-  
-  
+
   /* ----------------------------------------------------
      MAIN FETCH FUNCTION (fresh request)
   ---------------------------------------------------- */
@@ -141,222 +50,148 @@ document.addEventListener("DOMContentLoaded", function() {
     const state = window.__OPTIMIAO_FETCH_STATE__;
     const start = performance.now();
     const url = `https://campaign-worker.developer-208.workers.dev/?shop=${window.__SHOP_DOMAIN__}`;
-  
+
     // 🔒 Prevent parallel fetches
     if (state.pending) return state.pending;
-  
+
     state.pending = fetch(url, {
-      cache: "no-store"
+      cache: 'no-store',
     })
-      .then(res => res.json())
-      {% comment %} .then(json => {
-        state.data = json;
-        state.lastFetch = Date.now();
-  
-        console.log(
-          `%c⚡ Optimaio Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
-          "color:#4caf50",
-          json
-        );
-  
-        state.pending = null;
-        return json;
-      }) {% endcomment %}
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         const normalized = normalizeCampaignResponse(json);
-      
+
         state.data = normalized;
         state.lastFetch = Date.now();
-      
+
         console.log(
           `%c⚡ Optimaio Fetch (normalized): ${Math.round(performance.now() - start)}ms`,
-          "color:#4caf50",
+          'color:#4caf50',
           normalized
         );
-      
+
         state.pending = null;
         return normalized;
       })
-      
+
+      .catch((err) => {
+        console.warn('⚠️ Optimaio Fetch Failed', err);
+        state.pending = null;
+        throw err;
+      });
+
+    return state.pending;
+  }
+
+  /* ----------------------------------------------------
+     PUBLIC FUNCTION USED BY ALL SECTIONS
+  ---------------------------------------------------- */
+  window.getCampaignData = async function () {
+    const state = window.__OPTIMIAO_FETCH_STATE__;
+    const now = Date.now();
+
+    // ✔ In-memory cache hit
+    if (state.TTL > 0 && state.data && now - state.lastFetch < state.TTL) {
+      console.log('%c📦 Optimaio Campaign (memory cache)', 'color:#2196f3', state.data);
+      return state.data;
+    }
+
+    // ✔ Fetch fresh
+    return fetchCampaignFresh();
+  };
+
+  /* ----------------------------------------------------
+     🚀 OPTIONAL PREFETCH (still memory-only)
+  ---------------------------------------------------- */
+  window.__OPTIMIAO_PREFETCH__ = fetchCampaignFresh().catch(() => null);
+</script>
+
+{% comment %}
+  <script>
+  /* ----------------------------------------------------
+     🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE (1 fetch only)
+     Fresh data + Shared across all scripts
+  ---------------------------------------------------- */
+
+  window.__OPTIMIAO_FETCH_STATE__ = {
+    data: null,       // latest campaign data
+    pending: null,    // shared promise
+    lastFetch: 0,     // timestamp
+    refreshGap: 0     // 0 = always fresh, no caching
+  };
+
+  /* ----------------------------------------------------
+     MAIN FETCH FUNCTION (always fresh)
+  ---------------------------------------------------- */
+  async function fetchCampaignFresh() {
+    const state = window.__OPTIMIAO_FETCH_STATE__;
+    const start = performance.now();
+
+    // If fetch already in progress → WAIT for same promise
+    if (state.pending) return state.pending;
+
+    // Start new fetch
+    state.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
+      cache: "no-store"
+    })
+      .then(res => res.json())
+      .then(json => {
+        state.data = json;
+        state.lastFetch = Date.now();
+
+        console.log(
+          `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
+          "color:#4caf50",
+          json
+        );
+
+        state.pending = null;
+        return json;
+      })
       .catch(err => {
         console.warn("⚠️ Optimaio Fetch Failed", err);
         state.pending = null;
         throw err;
       });
-  
+
     return state.pending;
   }
-  
-  
+
   /* ----------------------------------------------------
-     PUBLIC FUNCTION USED BY ALL SECTIONS
+     PUBLIC function used by ALL Scripts
   ---------------------------------------------------- */
   window.getCampaignData = async function() {
     const state = window.__OPTIMIAO_FETCH_STATE__;
     const now = Date.now();
-  
-    // ✔ In-memory cache hit
-    if (
-      state.TTL > 0 &&
-      state.data &&
-      now - state.lastFetch < state.TTL
-    ) {
-      console.log("%c📦 Optimaio Campaign (memory cache)", "color:#2196f3", state.data);
-      return state.data;
-    }
-  
-    // ✔ Fetch fresh
+
+    // No cache at all → ALWAYS fetch fresh
     return fetchCampaignFresh();
   };
-  
-  
+
   /* ----------------------------------------------------
-     🚀 OPTIONAL PREFETCH (still memory-only)
+     OPTIONAL: AUTO REFRESH TIMER (TURN ON IF YOU WANT)
   ---------------------------------------------------- */
-  window.__OPTIMIAO_PREFETCH__ = fetchCampaignFresh().catch(() => null);
-  
+  // ❗ Set to 0 to disable | Example: 60_000 = refresh every 60 seconds
+  const AUTO_REFRESH_TIMER = 0;
+
+  if (AUTO_REFRESH_TIMER > 0) {
+    setInterval(() => {
+      console.log("%c🔄 Auto-refreshing campaign (timer)", "color: orange");
+      fetchCampaignFresh();
+    }, AUTO_REFRESH_TIMER);
+  }
+
   </script>
-  
-
- 
-
-{% comment %} <script>
-/* ----------------------------------------------------
-   🌐 GLOBAL OPTIMAIO CAMPAIGN ENGINE (1 fetch only)
-   Fresh data + Shared across all scripts
----------------------------------------------------- */
-
-window.__OPTIMIAO_FETCH_STATE__ = {
-  data: null,       // latest campaign data
-  pending: null,    // shared promise
-  lastFetch: 0,     // timestamp
-  refreshGap: 0     // 0 = always fresh, no caching
-};
-
-/* ----------------------------------------------------
-   MAIN FETCH FUNCTION (always fresh)
----------------------------------------------------- */
-async function fetchCampaignFresh() {
-  const state = window.__OPTIMIAO_FETCH_STATE__;
-  const start = performance.now();
-
-  // If fetch already in progress → WAIT for same promise
-  if (state.pending) return state.pending;
-
-  // Start new fetch
-  state.pending = fetch("/apps/optimaio-cart/activeCampaigns", {
-    cache: "no-store"
-  })
-    .then(res => res.json())
-    .then(json => {
-      state.data = json;
-      state.lastFetch = Date.now();
-
-      console.log(
-        `%c⚡ Optimaio Main Fetch (fresh): ${Math.round(performance.now() - start)}ms`,
-        "color:#4caf50",
-        json
-      );
-
-      state.pending = null;
-      return json;
-    })
-    .catch(err => {
-      console.warn("⚠️ Optimaio Fetch Failed", err);
-      state.pending = null;
-      throw err;
-    });
-
-  return state.pending;
-}
-
-/* ----------------------------------------------------
-   PUBLIC function used by ALL Scripts
----------------------------------------------------- */
-window.getCampaignData = async function() {
-  const state = window.__OPTIMIAO_FETCH_STATE__;
-  const now = Date.now();
-
-  // No cache at all → ALWAYS fetch fresh
-  return fetchCampaignFresh();
-};
-
-/* ----------------------------------------------------
-   OPTIONAL: AUTO REFRESH TIMER (TURN ON IF YOU WANT)
----------------------------------------------------- */
-// ❗ Set to 0 to disable | Example: 60_000 = refresh every 60 seconds
-const AUTO_REFRESH_TIMER = 0;
-
-if (AUTO_REFRESH_TIMER > 0) {
-  setInterval(() => {
-    console.log("%c🔄 Auto-refreshing campaign (timer)", "color: orange");
-    fetchCampaignFresh();
-  }, AUTO_REFRESH_TIMER);
-}
-
-</script> {% endcomment %}
+{% endcomment %}
 
 
-<script>
-  window.__OPTIMAIO_CURRENCIES__ = {{ shop.metafields.optimaio_cart.currencies.value | json }};
-  window.__SHOP_MONEY_FORMAT__ = "{{ shop.money_format | escape }}";
-
- {% comment %} // Store only latest fetch time + last data
-  window.__OptimaioCampaignCache = {
-    data: null,
-    fetchTime: 0  // milliseconds
-  };
-
-  window.fetchOptimaioCampaign = async function() {
-    console.log("%c[Optimaio] 🔄 Fetching fresh campaign…", "color:#007bff");
-
-    // ⏱ Start timer
-    const startTime = performance.now();
-
-    try {
-      const res = await fetch("/apps/optimaio-cart/activeCampaigns", { cache: "no-store" });
-
-      // HTTP error handling
-      if (!res.ok) {
-        console.error("[Optimaio] ❌ HTTP Error:", res.status);
-        return null;
-      }
-
-      const data = await res.json();
-
-      // ⏱ End timer
-      const endTime = performance.now();
-      window.__OptimaioCampaignCache.fetchTime = Math.round(endTime - startTime);
-
-      console.log(
-        `%c[Optimaio] ✅ Fresh campaign received in liquid ${window.__OptimaioCampaignCache.fetchTime}ms`,
-        "color:#4caf50"
-      );
-
-      window.__OptimaioCampaignCache.data = data;
-
-      return data;
-
-    } catch (err) {
-      const endTime = performance.now();
-      window.__OptimaioCampaignCache.fetchTime = Math.round(endTime - startTime);
-
-      console.error(
-        `%c[Optimaio] 🚨 Fetch failed after ${window.__OptimaioCampaignCache.fetchTime}ms`,
-        "color:red"
-      );
-
-      return null;
-    }
-  }; {% endcomment %}
-</script>
-
-<script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script> 
+<script src="{{ 'optimaio-gift.js' | asset_url }}" defer></script>
 
 <script src="{{ 'optimaio.js' | asset_url }}" defer></script>
- 
- {{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
- {{ 'optimaio-theme0-color.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'optimaio-ui-settings.js' | asset_url }}" defer></script>
+
+{{ 'optimaio-core.css' | asset_url | stylesheet_tag }}
+{{ 'optimaio-theme0-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme1-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme2-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme3-color.css' | asset_url | stylesheet_tag }}
@@ -367,185 +202,210 @@ if (AUTO_REFRESH_TIMER > 0) {
 {{ 'optimaio-theme8-color.css' | asset_url | stylesheet_tag }}
 {{ 'optimaio-theme9-color.css' | asset_url | stylesheet_tag }}
 
-<script>
-  (function () {
-    function applyOptimaioTheme() {
-      const settings = window.__OPTIMAIO_CART__?.settings || {};
-      const theme = settings.theme || "theme1";
-      const bannerStyle = settings.bannerStyle || {};
-  
-      const roots = [
-        document.getElementById("optimaio-cart-drawer"),
-  document.getElementById("optimaio-corner-cart")
-      ].filter(Boolean);
-  
-      if (!roots.length) return;
-  
-   /* ----------------------------
-   1️⃣ Apply theme (SYNC ROOT)
----------------------------- */
-document.body.setAttribute("data-optimaio-theme", theme);
+{% comment %}
+  <script>
+    (function () {
+      function applyOptimaioTheme() {
+        const settings = window.__OPTIMAIO_CART__?.settings || {};
+        const theme = settings.theme || "theme1";
+        const bannerStyle = settings.bannerStyle || {};
 
-roots.forEach(root => {
-  root.setAttribute("data-optimaio-theme", theme);
-});
+        const roots = [
+          document.getElementById("optimaio-cart-drawer"),
+    document.getElementById("optimaio-corner-cart")
+        ].filter(Boolean);
 
-  
-      /* ----------------------------
-         2️⃣ Apply banner style
-         Priority: image → gradient → solid
-      ---------------------------- */
-      roots.forEach(root => {
-        // reset first
-        if (root.id === "optimaio-corner-cart") return; // 👈 ADD THIS LINE
-        root.style.background = "";
-        root.style.backgroundImage = "";
-  
-        if (bannerStyle.bannerType === "image" && bannerStyle.imageUrl) {
-          root.style.backgroundImage = `url(${bannerStyle.imageUrl})`;
-          root.style.backgroundSize = "cover";
-          root.style.backgroundPosition = "center";
-          root.style.backgroundRepeat = "no-repeat";
-  
-        } else if (
-          bannerStyle.bannerType === "gradient" &&
-          bannerStyle.gradientStart &&
-          bannerStyle.gradientEnd
-        ) {
-          root.style.background = `linear-gradient(135deg, ${bannerStyle.gradientStart}, ${bannerStyle.gradientEnd})`;
-  
-        } else if (
-          bannerStyle.bannerType === "solid" &&
-          bannerStyle.solidColor
-        ) {
-          root.style.background = bannerStyle.solidColor;
-        }
-      });
+        if (!roots.length) return;
 
-      /* ----------------------------
-         3️⃣ Apply color variables
-      ---------------------------- */
-      const colors = settings.colors || {};
-      const variableMap = {
-        buttonColor: "--accent",
-        primaryColor: "--text-primary",
-        secondaryColor: "--text-secondary"
-        
-      };
+     /* ----------------------------
+     1️⃣ Apply theme (SYNC ROOT)
+  ---------------------------- */
+  document.body.setAttribute("data-optimaio-theme", theme);
 
-      /* ----------------------------
-   Progress gradient (OPT-IN)
----------------------------- */
-roots.forEach(root => {
-  // reset first
-  root.style.removeProperty("--progress-start");
-  root.style.removeProperty("--progress-end");
-  root.removeAttribute("data-progress-gradient");
+  roots.forEach(root => {
+    root.setAttribute("data-optimaio-theme", theme);
+  });
 
-  // apply only if BOTH provided
-  if (colors.progressStart && colors.progressEnd) {
-    root.style.setProperty("--progress-start", colors.progressStart);
-    root.style.setProperty("--progress-end", colors.progressEnd);
-    root.setAttribute("data-progress-gradient", "true");
-  }
-});
 
-  
-      roots.forEach(root => {
-        Object.entries(variableMap).forEach(([key, cssVar]) => {
-          if (colors[key]) {
-            root.style.setProperty(cssVar, colors[key]);
+        /* ----------------------------
+           2️⃣ Apply banner style
+           Priority: image → gradient → solid
+        ---------------------------- */
+        roots.forEach(root => {
+          // reset first
+          if (root.id === "optimaio-corner-cart") return; // 👈 ADD THIS LINE
+          root.style.background = "";
+          root.style.backgroundImage = "";
+
+          if (bannerStyle.bannerType === "image" && bannerStyle.imageUrl) {
+            root.style.backgroundImage = `url(${bannerStyle.imageUrl})`;
+            root.style.backgroundSize = "cover";
+            root.style.backgroundPosition = "center";
+            root.style.backgroundRepeat = "no-repeat";
+
+          } else if (
+            bannerStyle.bannerType === "gradient" &&
+            bannerStyle.gradientStart &&
+            bannerStyle.gradientEnd
+          ) {
+            root.style.background = `linear-gradient(135deg, ${bannerStyle.gradientStart}, ${bannerStyle.gradientEnd})`;
+
+          } else if (
+            bannerStyle.bannerType === "solid" &&
+            bannerStyle.solidColor
+          ) {
+            root.style.background = bannerStyle.solidColor;
           }
         });
-      });
 
-      /* ----------------------------
-         4️⃣ Custom CSS (TOP priority)
-      ---------------------------- */
-      if (settings.customCSS?.trim()) {
-        let style = document.getElementById("optimaio-custom-css");
-        if (!style) {
-          style = document.createElement("style");
-          style.id = "optimaio-custom-css";
-          document.head.appendChild(style);
+        /* ----------------------------
+           3️⃣ Apply color variables
+        ---------------------------- */
+        const colors = settings.colors || {};
+        const variableMap = {
+          buttonColor: "--accent",
+          primaryColor: "--text-primary",
+          secondaryColor: "--text-secondary"
+
+        };
+
+        /* ----------------------------
+     Progress gradient (OPT-IN)
+  ---------------------------- */
+  roots.forEach(root => {
+    // reset first
+    root.style.removeProperty("--progress-start");
+    root.style.removeProperty("--progress-end");
+    root.removeAttribute("data-progress-gradient");
+
+    // apply only if BOTH provided
+    if (colors.progressStart && colors.progressEnd) {
+      root.style.setProperty("--progress-start", colors.progressStart);
+      root.style.setProperty("--progress-end", colors.progressEnd);
+      root.setAttribute("data-progress-gradient", "true");
+    }
+  });
+
+
+        roots.forEach(root => {
+          Object.entries(variableMap).forEach(([key, cssVar]) => {
+            if (colors[key]) {
+              root.style.setProperty(cssVar, colors[key]);
+            }
+          });
+        });
+
+        /* ----------------------------
+           4️⃣ Custom CSS (TOP priority)
+        ---------------------------- */
+        if (settings.customCSS?.trim()) {
+          let style = document.getElementById("optimaio-custom-css");
+          if (!style) {
+            style = document.createElement("style");
+            style.id = "optimaio-custom-css";
+            document.head.appendChild(style);
+          }
+          style.textContent = settings.customCSS;
         }
-        style.textContent = settings.customCSS;
       }
-    }
-  
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", applyOptimaioTheme);
-    } else {
-      applyOptimaioTheme();
-    }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyOptimaioTheme);
+      } else {
+        applyOptimaioTheme();
+      }
+    })();
+    </script>
+
+
+
+  <script>
+  (function () {
+    const settings = window.__OPTIMAIO_CART__?.settings || {};
+    const zIndex = settings.zIndex;
+
+    if (!zIndex || zIndex === "auto") return;
+
+    const z = Number(zIndex);
+    if (isNaN(z)) return;
+
+    const drawer = document.getElementById("optimaio-cart-drawer");
+    const corner = document.getElementById("optimaio-corner-cart");
+
+    if (drawer) drawer.style.setProperty("--optimaio-z-index", z);
+    if (corner) corner.style.setProperty("--optimaio-z-index", z);
   })();
   </script>
-  
+{% endcomment %}
 
-
-<script>
-(function () {
-  const settings = window.__OPTIMAIO_CART__?.settings || {};
-  const zIndex = settings.zIndex;
-
-  if (!zIndex || zIndex === "auto") return;
-
-  const z = Number(zIndex);
-  if (isNaN(z)) return;
-
-  const drawer = document.getElementById("optimaio-cart-drawer");
-  const corner = document.getElementById("optimaio-corner-cart");
-
-  if (drawer) drawer.style.setProperty("--optimaio-z-index", z);
-  if (corner) corner.style.setProperty("--optimaio-z-index", z);
-})();
-</script>
-
-
-  
- 
 <!-- Optimaio Universal Responsive Cart Drawer -->
 <div id="optimaio-corner-cart">
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart-icon lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-   {% comment %} <span id="optimaio-corner-cart-count">0</span> {% endcomment %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="lucide lucide-shopping-cart-icon lucide-shopping-cart"
+  >
+    <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+  </svg>
+  {% comment %} <span id="optimaio-corner-cart-count">0</span> {% endcomment %}
 </div>
- 
+
 <div id="optimaio-cart-drawer" class="optimaio-cart-drawer" data-active-tab="cart">
-  
   <!-- Header -->
   <div class="optimaio-cart-drawer__header">
     <h2 class="optimaio-cart-tile">My Cart</h2>
-    <button type="button" class="optimaio-cart-drawer__close"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M18 6 6 18"/>
-      <path d="M6 6 18 18"/>
-      </svg></button>
+    <button type="button" class="optimaio-cart-drawer__close">
+      <svg
+        xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 6 6 18"/>
+        <path d="M6 6 18 18"/>
+      </svg>
+    </button>
   </div>
-
 
   <div class="optimaio-announcement-bar">
     <button class="optimaio-announcement-arrow left" aria-label="Previous">‹</button>
-  
+
     <div
       class="optimaio-announcement-viewport"
       id="optimaio-announcement-viewport"
     ></div>
-  
+
     <button class="optimaio-announcement-arrow right" aria-label="Next">›</button>
   </div>
-  
-  
-  
-  
-  
-  
-  
 
   <div id="optimaio-countdown" class="optimaio-countdown" style="display:none;">
-    <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg
+      xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
       <circle cx="12" cy="12" r="9"/>
       <path d="M12 7v5l3 2"/>
-      </svg>
-      <span class="optimaio-countdown-label" id="optimaio-countdown-label"></span>
+    </svg>
+    <span class="optimaio-countdown-label" id="optimaio-countdown-label"></span>
     <span id="optimaio-countdown-time">
       <span class="optimaio-time"><strong>00</strong>d :</span>
       <span class="optimaio-time"><strong>00</strong>h :</span>
@@ -554,59 +414,30 @@ roots.forEach(root => {
     </span>
   </div>
 
- 
   <!-- Middle Scrollable Body -->
   <div class="optimaio-cart-drawer__middle">
-    
     <!-- Optimaio Flow Loader -->
-<div id="optimaio-cart-loading" class="optimaio-cart-loading hidden">
-  <div class="optimaio-loader-bar">
-    <span class="optimaio-loader-fill"></span>
-  </div>
-</div>
-    
+    <div id="optimaio-cart-loading" class="optimaio-cart-loading hidden">
+      <div class="optimaio-loader-bar">
+        <span class="optimaio-loader-fill"></span>
+      </div>
+    </div>
+
     <!-- TAB: CART -->
     {% comment %} <div class="optimaio-cart-drawer-border-radius"> {% endcomment %}
     <div class="optimaio-cart-tab optimaio-cart-tab--cart" data-tab="cart">
-     {% comment %} </div> {% endcomment %}
-     
+      {% comment %} </div> {% endcomment %}
 
-     {% render 'optimaio-progress-bar' %}
-
-      {% comment %} <!-- 🔒 Hidden template used by BXGY to render the instant gift card -->
-<template id="optimaio-free-gift-template">
-  <div class="optimaio-cart-item-card optimaio-free-gift">
-    <div class="optimaio-cart-item__image">
-      <img src="" alt="Free gift" />
-    </div>
-    <div class="optimaio-cart-item__info">
-      <div class="optimaio-cart-item__top">
-        <p class="optimaio-cart-item__title"></p>
-        <span class="optimaio-free-gift-status">Adding…</span>
-      </div>
-      <div class="optimaio-cart-item__bottom">
-        <div class="optimaio-cart-item__actions">
-          <span class="optimaio-cart-item__qty">1</span>
-        </div>
-        <div class="optimaio-cart-item__pricing">
-          <span class="optimaio-price">—</span>
-        </div>
-      </div>
-      <div class="optimaio-cart-item__discount"><span>Free Gift Pending</span></div>
-    </div>
-  </div>
-</template> {% endcomment %}
+      {% render 'optimaio-progress-bar' %}
 
       <div class="optimaio-cart-drawer__items"></div>
- 
+
       <div class="optimaio-cart-drawer__empty" style="display:none;">
         <p>Your cart is empty</p>
         <a href="/" class="optimaio-continue-btn">Continue Shopping</a>
       </div>
- 
-      
     </div>
- 
+
     <!-- TAB: OFFERS -->
     <div class="optimaio-cart-tab optimaio-cart-tab--offers" data-tab="offers">
       {% render 'optimaio-offers' %}
@@ -620,25 +451,47 @@ roots.forEach(root => {
   <div class="optimaio-cart-drawer-oneclick-upsell">
     <div id="optimaio-oneclick-upsell" class="optimaio-oneclick-upsell"></div>
   </div>
-  
-  
- 
+
   <!-- Footer Summary -->
   <div class="optimaio-cart-drawer__summary-checkout">
     <div class="optimaio-cart-actions">
-
       <button class="optimaio-action-btn" data-sheet="note">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen-icon lucide-notebook-pen"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-notebook-pen-icon lucide-notebook-pen"
+        >
+          <path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/>
+        </svg>
         Add note
       </button>
-    
+
       <button class="optimaio-action-btn" data-sheet="discount">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket-percent-icon lucide-ticket-percent"><path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/></svg> 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-ticket-percent-icon lucide-ticket-percent"
+        >
+          <path d="M2 9a3 3 0 1 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/>
+        </svg>
         Discount
       </button>
-    
     </div>
-    
+
     <div class="optimaio-cart-drawer__summary">
       <div class="optimaio-discount-row">
         <span class="optimaio-discount-label">Discount:</span>
@@ -649,48 +502,68 @@ roots.forEach(root => {
         <span class="optimaio-total-amount">₹0</span>
       </div>
     </div>
-    <button class="optimaio-checkout-btn">
-      Proceed to Checkout
-    </button>    
+    <button class="optimaio-checkout-btn">Proceed to Checkout</button>
   </div>
- 
+
   <!-- Footer Tabs -->
   <div class="optimaio-cart-drawer__footer">
-    <button class="optimaio-tab-btn active" data-target="cart"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="8" cy="21" r="1"/>
-      <circle cx="19" cy="21" r="1"/>
-      <path d="M2 2h3l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L23 6H6"/>
-      </svg> Cart</button>
-    <button class="optimaio-tab-btn" data-target="offers"><svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 12v10H4V12"/>
-      <path d="M2 7h20v5H2z"/>
-      <path d="M12 22V7"/>
-      <path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C10 2 12 7 12 7z"/>
-      <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7z"/>
-      </svg> Offers</button>
+    <button class="optimaio-tab-btn active" data-target="cart">
+      <svg
+        xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="8" cy="21" r="1"/>
+        <circle cx="19" cy="21" r="1"/>
+        <path d="M2 2h3l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L23 6H6"/>
+      </svg>
+      Cart
+    </button>
+    <button class="optimaio-tab-btn" data-target="offers">
+      <svg
+        xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M20 12v10H4V12"/>
+        <path d="M2 7h20v5H2z"/>
+        <path d="M12 22V7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C10 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C14 2 12 7 12 7z"/>
+      </svg>
+      Offers
+    </button>
   </div>
 
   <div class="optimaio-bottom-sheet" id="optimaio-sheet">
-
     <div class="optimaio-sheet-header">
       <span id="optimaio-sheet-title"></span>
       <button class="optimaio-sheet-close">✕</button>
     </div>
-  
+
     <div class="optimaio-sheet-body">
-  
       <!-- NOTE -->
       <div class="optimaio-sheet-content" data-content="note">
         <textarea
           class="optimaio-note-textarea"
           placeholder="Special instructions for seller"
         ></textarea>
-  
-        <button class="optimaio-sheet-primary">
-          Save
-        </button>
+
+        <button class="optimaio-sheet-primary">Save</button>
       </div>
-  
+
       <!-- DISCOUNT -->
       <div class="optimaio-sheet-content" data-content="discount">
         <div class="optimaio-discount-field">
@@ -698,27 +571,21 @@ roots.forEach(root => {
             type="text"
             class="optimaio-discount-input"
             placeholder="Enter discount code"
-          />
-          <button class="optimaio-discount-apply">
-            Apply
-          </button>
+          >
+          <button class="optimaio-discount-apply">Apply</button>
         </div>
       </div>
-  
     </div>
   </div>
-
-
-
-  
 </div>
 
-<script>
+{% comment %}
+  <script>
   (function () {
     function applyCartTexts() {
       const texts = window.__OPTIMAIO_CART__?.settings?.cartTexts;
       if (!texts) return;
-  
+
       /* =============================
          CART — HEADER
       ============================= */
@@ -726,7 +593,7 @@ roots.forEach(root => {
         const title = document.querySelector(".optimaio-cart-tile");
         if (title) title.textContent = texts.header.cartHeaderText;
       }
-  
+
       /* =============================
          CART — FOOTER TABS
       ============================= */
@@ -737,7 +604,7 @@ roots.forEach(root => {
             " " + texts.footer.cartButtonText;
         }
       }
-  
+
       if (texts.footer?.offersButtonText) {
         const offersTab = document.querySelector('.optimaio-tab-btn[data-target="offers"]');
         if (offersTab) {
@@ -745,7 +612,7 @@ roots.forEach(root => {
             " " + texts.footer.offersButtonText;
         }
       }
-  
+
       /* =============================
          CART — SUMMARY + BUTTONS
       ============================= */
@@ -753,12 +620,12 @@ roots.forEach(root => {
         const el = document.querySelector(".optimaio-discount-label");
         if (el) el.textContent = texts.side.discountText + ":";
       }
-  
+
       if (texts.side?.totalText) {
         const el = document.querySelector(".optimaio-total-label");
         if (el) el.textContent = texts.side.totalText + ":";
       }
-  
+
       if (texts.side?.addNoteButtonText) {
         document
           .querySelectorAll('.optimaio-action-btn[data-sheet="note"]')
@@ -766,7 +633,7 @@ roots.forEach(root => {
             btn.lastChild.textContent = " " + texts.side.addNoteButtonText;
           });
       }
-  
+
       if (texts.side?.discountCodeButtonText) {
         document
           .querySelectorAll('.optimaio-action-btn[data-sheet="discount"]')
@@ -774,23 +641,23 @@ roots.forEach(root => {
             btn.lastChild.textContent = " " + texts.side.discountCodeButtonText;
           });
       }
-  
+
       if (texts.side?.checkoutButtonText) {
         const btn = document.querySelector(".optimaio-checkout-btn");
         if (btn) btn.textContent = texts.side.checkoutButtonText;
       }
-  
+
       /* =============================
          OFFERS — TITLE + BADGES
          (NEW, minimal)
       ============================= */
       const offers = texts.offers;
-  
+
       if (offers?.offerHeaderText) {
         const title = document.querySelector(".optimaio-offers-title");
         if (title) title.textContent = offers.offerHeaderText;
       }
-  
+
       if (offers?.badgeLockedText) {
         document
           .querySelectorAll(".optimaio-offer-badge.locked")
@@ -798,7 +665,7 @@ roots.forEach(root => {
             el.textContent = offers.badgeLockedText;
           });
       }
-  
+
       if (offers?.badgeUnlockedText) {
         document
           .querySelectorAll(".optimaio-offer-badge.unlocked")
@@ -807,30 +674,31 @@ roots.forEach(root => {
           });
       }
     }
-  
+
     /* Initial load */
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", applyCartTexts);
     } else {
       applyCartTexts();
     }
-  
+
     /* Re-apply on dynamic updates */
     document.addEventListener("optimaio:open", applyCartTexts);
     document.addEventListener("optimaio:gifts:updated", applyCartTexts);
   })();
   </script>
-  
-  
-{% comment %} <script>
+{% endcomment %}
+
+{% comment %}
+  <script>
   (function () {
     if (window.__OPTIMAIO_ONECLICK_INIT__) return;
     window.__OPTIMAIO_ONECLICK_INIT__ = true;
-  
+
     function extractVariantId(gid) {
       return gid?.split("/").pop();
     }
-  
+
     function formatMoney(price) {
       try {
         return Shopify.formatMoney(
@@ -841,11 +709,11 @@ roots.forEach(root => {
         return price;
       }
     }
-  
+
     async function getCart() {
       return window.OptimaioCartController?.getCart();
     }
-  
+
     async function addUpsell(variantId, hide) {
       await fetch("/cart/add.js", {
         method: "POST",
@@ -857,51 +725,51 @@ roots.forEach(root => {
         })
       });
     }
-  
+
     async function removeUpsell(cart, variantId) {
       const item = cart.items.find(i => i.variant_id == variantId);
       if (!item) return;
-  
+
       await fetch("/cart/change.js", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.key, quantity: 0 })
       });
     }
-  
+
     async function render() {
       const upsell = window.__OPTIMAIO_CART__?.upsell?.oneClickUpsell;
       if (!upsell?.enabled) return;
-  
+
       const container = document.getElementById("optimaio-oneclick-upsell");
       if (!container) return;
-  
+
       const p = upsell.product;
       if (!p?.availableForSale) {
         container.innerHTML = "";
         return;
       }
-  
+
       const variantId = extractVariantId(p.id);
       if (!variantId) return;
-  
+
       const cart = await getCart();
       const inCart = cart?.items?.some(i => i.variant_id == variantId);
-  
+
       const isCheckbox = upsell.ctaType === "checkbox";
       const isHidden = upsell.showInCartList === false;
-  
+
       container.innerHTML = `
         <div class="optimaio-mini-upsell">
           ${upsell.showProductImage !== false ? `
             <img src="${p.image?.url || ""}" class="optimaio-mini-upsell__image">
           ` : ""}
-  
+
           <div class="optimaio-mini-upsell__info">
             <div class="optimaio-mini-upsell__title">${p.productTitle}</div>
             <div class="optimaio-mini-upsell__price">${formatMoney(p.price)}</div>
           </div>
-  
+
           ${
             isCheckbox
               ? `<label class="optimaio-upsell-checkbox">
@@ -914,23 +782,23 @@ roots.forEach(root => {
           }
         </div>
       `;
-  
+
       if (isCheckbox) {
         const cb = container.querySelector("input");
         cb.onchange = async () => {
           cb.disabled = true;
-  
+
           const freshCart = await getCart();
           const exists = freshCart.items.some(i => i.variant_id == variantId);
-  
+
           if (cb.checked && !exists) {
             await addUpsell(variantId, isHidden);
           }
-  
+
           if (!cb.checked && exists) {
             await removeUpsell(freshCart, variantId);
           }
-  
+
           await window.OptimaioCartController.refresh();
           cb.disabled = false;
         };
@@ -938,740 +806,579 @@ roots.forEach(root => {
         const btn = container.querySelector("button");
         btn.onclick = async () => {
           btn.disabled = true;
-  
+
           const freshCart = await getCart();
           const exists = freshCart.items.some(i => i.variant_id == variantId);
-  
+
           exists
             ? await removeUpsell(freshCart, variantId)
             : await addUpsell(variantId, isHidden);
-  
+
           await window.OptimaioCartController.refresh();
           btn.disabled = false;
         };
       }
     }
-  
+
     document.addEventListener("DOMContentLoaded", render);
     document.addEventListener("optimaio:open", render);
     document.addEventListener("optimaio:cart:updated", render);
   })();
-  </script> {% endcomment %}
-  
-
-  
-
-  
-  <style>
-    .optimaio-cart-drawer-oneclick-upsell {
-      padding: 0 12px 8px;
-      margin: 0 12px;
-      border-radius: 10px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    }
-    .optimaio-oneclick-upsell-title {
-      font-size: 12px;
-      margin: 2px 0 0;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .optimaio-oneclick-upsell {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
-    
-    .optimaio-mini-upsell {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 6px 8px;
-    }
-    
-    .optimaio-mini-upsell__image {
-      width: 40px;
-      height: 40px;
-      border-radius: 6px;
-      object-fit: cover;
-    }
-    
-    .optimaio-mini-upsell__info {
-      flex: 1;
-      min-width: 0;
-    }
-    
-    .optimaio-mini-upsell__text {
-      font-size: 12px;
-    font-weight: 600;
-    line-height: 16px;
-    margin: 0;
-    color: var(--text-primary);
-    }
-
-    .optimaio-mini-upsell__title {
-      font-size: 12px;
-      font-weight: 600;
-      margin: 0;
-      line-height: 16px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .optimaio-mini-upsell__price {
-      font-size: 12px;
-      color: var(--text-primary);
-      margin: 2px 0 0;
-    }
-    
-    .optimaio-mini-upsell__btn {
-      background: var(--accent);
-    color: var(--accent-contrast);
-    border: none;
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    }
-    
-    .optimaio-mini-upsell__add:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    </style>
-    
-  
-
-<script>
-  (function () {
-    const settings = window.__OPTIMAIO_CART__?.settings;
-    const widget = settings?.cartWidget;
-  
-    const cart = document.getElementById("optimaio-corner-cart");
-    if (!cart || !widget) return;
-  
-    /* ----------------------------
-       1️⃣ Show / Hide
-    ---------------------------- */
-    if (!widget.showFloatingWidget) {
-      cart.style.display = "none";
-      return;
-    }
-  
-    cart.style.display = "flex";
-  
-    /* ----------------------------
-       2️⃣ Position (left / right)
-    ---------------------------- */
-    cart.classList.remove("position-left", "position-right");
-  
-    if (widget.position === "left") {
-      cart.classList.add("position-left");
-    } else {
-      cart.classList.add("position-right"); // default
-    }
-  
-    /* ----------------------------
-       3️⃣ Widget Color
-    ---------------------------- */
-    if (widget.widgetColor) {
-      cart.style.background = widget.widgetColor;
-    }
-  
-  })();
   </script>
-  
- 
-<script>
-  (function () {
-    const sheet = document.getElementById("optimaio-sheet");
-    const title = document.getElementById("optimaio-sheet-title");
+{% endcomment %}
 
-    /* =============================
-   FEATURE FLAGS
-============================= */
-const settings = window.__OPTIMAIO_CART__?.settings || {};
-const features = settings.cartFeatures || {};
 
-const NOTES_ENABLED = features.orderNotes !== false;
-const DISCOUNT_ENABLED = features.discountCodeInput !== false;
-
-/* =============================
-   VISIBILITY CONTROL
-============================= */
-if (!NOTES_ENABLED) {
-  document
-    .querySelectorAll('.optimaio-action-btn[data-sheet="note"]')
-    .forEach(el => el.style.display = "none");
-
-  sheet
-    .querySelectorAll('.optimaio-sheet-content[data-content="note"]')
-    .forEach(el => el.remove());
-}
-
-if (!DISCOUNT_ENABLED) {
-  document
-    .querySelectorAll('.optimaio-action-btn[data-sheet="discount"]')
-    .forEach(el => el.style.display = "none");
-
-  sheet
-    .querySelectorAll('.optimaio-sheet-content[data-content="discount"]')
-    .forEach(el => el.remove());
-}
-
-  
-    if (!sheet) return;
-  
-    /* -----------------------------
-       OPEN SHEET
-    ----------------------------- */
-    document.addEventListener("click", e => {
-      const actionBtn = e.target.closest(".optimaio-action-btn");
-      if (!actionBtn) return;
-  
-      const type = actionBtn.dataset.sheet;
-
-      if (type === "note" && !NOTES_ENABLED) return;
-if (type === "discount" && !DISCOUNT_ENABLED) return;
-
-  
-      // Set title
-      title.textContent =
-        type === "note"
-          ? "Add note for seller"
-          : "Apply discount code";
-  
-      // Show correct content
-      sheet.querySelectorAll(".optimaio-sheet-content").forEach(c => {
-        c.classList.toggle("active", c.dataset.content === type);
-      });
-  
-      sheet.classList.add("open");
-    });
-  
-    /* -----------------------------
-       CLOSE SHEET
-    ----------------------------- */
-    function closeSheet() {
-      sheet.classList.remove("open");
-    }
-  
-    document.addEventListener("click", e => {
-      if (e.target.closest(".optimaio-sheet-close")) {
-        closeSheet();
-      }
-    });
-  
-    /* -----------------------------
-       SAVE NOTE (REAL SHOPIFY)
-    ----------------------------- */
-    document.addEventListener("click", async e => {
-      const saveBtn = e.target.closest(".optimaio-sheet-primary");
-      if (!saveBtn) return;
-      if (!NOTES_ENABLED) return;
-
-  
-      const textarea = sheet.querySelector(".optimaio-note-textarea");
-      if (!textarea) return;
-  
-      saveBtn.disabled = true;
-  
-      try {
-        await fetch("/cart/update.js", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ note: textarea.value })
-        });
-  
-        // Refresh cart UI safely
-        window.OptimaioCartController?.refresh();
-  
-        closeSheet(); // ✅ FIXED: closes popup
-  
-      } catch (err) {
-        console.error("Failed to save note", err);
-      } finally {
-        saveBtn.disabled = false;
-      }
-    });
-  
-    /* -----------------------------
-       APPLY DISCOUNT (REAL SHOPIFY)
-    ----------------------------- */
-    document.addEventListener("click", e => {
-      const applyBtn = e.target.closest(".optimaio-discount-apply");
-      if (!applyBtn) return;
-      if (!DISCOUNT_ENABLED) return;
-
-  
-      const input = sheet.querySelector(".optimaio-discount-input");
-      if (!input || !input.value.trim()) return;
-  
-      applyBtn.disabled = true;
-  
-      // Official Shopify method
-      window.location.href =
-        "/discount/" + encodeURIComponent(input.value.trim());
-    });
-
-    
-  
-  })();
-  </script>
-  <script>
-    fetch("/cart.js")
-  .then(r => r.json())
-  .then(cart => console.log(cart.note));
-
-  </script>
-  
+{% comment %}
   <script>
     (function () {
-      const announcement =
-        window.__OPTIMAIO_CART__?.settings?.announcementBar;
-    
-      if (!announcement) return;
-    
-      const messages = Array.isArray(announcement.messages)
-        ? announcement.messages.filter(Boolean)
-        : [];
-    
-      if (!messages.length) return;
-    
-      const autoScroll = announcement.autoScroll === true;
-    
-      const viewport = document.getElementById("optimaio-announcement-viewport");
-      if (!viewport) return;
-    
-      const bar = viewport.closest(".optimaio-announcement-bar");
-      const prevBtn = bar.querySelector(".optimaio-announcement-arrow.left");
-      const nextBtn = bar.querySelector(".optimaio-announcement-arrow.right");
-    
+      const settings = window.__OPTIMAIO_CART__?.settings;
+      const widget = settings?.cartWidget;
+
+      const cart = document.getElementById("optimaio-corner-cart");
+      if (!cart || !widget) return;
+
       /* ----------------------------
-         1️⃣ Render messages
+         1️⃣ Show / Hide
       ---------------------------- */
-      viewport.innerHTML = "";
-    
-      messages.forEach((text, i) => {
-        const el = document.createElement("div");
-        el.className = "optimaio-announcement-item";
-        if (i === 0) el.classList.add("active");
-        el.textContent = text;
-        viewport.appendChild(el);
-      });
-    
-      const items = viewport.querySelectorAll(".optimaio-announcement-item");
-      let index = 0;
-    
-      /* ----------------------------
-         2️⃣ AUTO SCROLL MODE
-      ---------------------------- */
-      if (autoScroll && items.length > 1) {
-        prevBtn.style.display = "none";
-        nextBtn.style.display = "none";
-    
-        if (window.__OPTIMAIO_ANNOUNCEMENT_TIMER__) {
-          clearInterval(window.__OPTIMAIO_ANNOUNCEMENT_TIMER__);
-        }
-    
-        window.__OPTIMAIO_ANNOUNCEMENT_TIMER__ = setInterval(() => {
-          items[index].classList.remove("active");
-          index = (index + 1) % items.length;
-          items[index].classList.add("active");
-        }, 4000);
-    
+      if (!widget.showFloatingWidget) {
+        cart.style.display = "none";
         return;
       }
-    
+
+      cart.style.display = "flex";
+
       /* ----------------------------
-         3️⃣ MANUAL MODE (ARROWS)
+         2️⃣ Position (left / right)
       ---------------------------- */
-      if (!autoScroll && items.length > 1) {
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
-    
-        function show(i) {
-          items[index].classList.remove("active");
-          index = (i + items.length) % items.length;
-          items[index].classList.add("active");
+      cart.classList.remove("position-left", "position-right");
+
+      if (widget.position === "left") {
+        cart.classList.add("position-left");
+      } else {
+        cart.classList.add("position-right"); // default
+      }
+
+      /* ----------------------------
+         3️⃣ Widget Color
+      ---------------------------- */
+      if (widget.widgetColor) {
+        cart.style.background = widget.widgetColor;
+      }
+
+    })();
+    </script>
+
+
+  <script>
+    (function () {
+      const sheet = document.getElementById("optimaio-sheet");
+      const title = document.getElementById("optimaio-sheet-title");
+
+      /* =============================
+     FEATURE FLAGS
+  ============================= */
+  const settings = window.__OPTIMAIO_CART__?.settings || {};
+  const features = settings.cartFeatures || {};
+
+  const NOTES_ENABLED = features.orderNotes !== false;
+  const DISCOUNT_ENABLED = features.discountCodeInput !== false;
+
+  /* =============================
+     VISIBILITY CONTROL
+  ============================= */
+  if (!NOTES_ENABLED) {
+    document
+      .querySelectorAll('.optimaio-action-btn[data-sheet="note"]')
+      .forEach(el => el.style.display = "none");
+
+    sheet
+      .querySelectorAll('.optimaio-sheet-content[data-content="note"]')
+      .forEach(el => el.remove());
+  }
+
+  if (!DISCOUNT_ENABLED) {
+    document
+      .querySelectorAll('.optimaio-action-btn[data-sheet="discount"]')
+      .forEach(el => el.style.display = "none");
+
+    sheet
+      .querySelectorAll('.optimaio-sheet-content[data-content="discount"]')
+      .forEach(el => el.remove());
+  }
+
+
+      if (!sheet) return;
+
+      /* -----------------------------
+         OPEN SHEET
+      ----------------------------- */
+      document.addEventListener("click", e => {
+        const actionBtn = e.target.closest(".optimaio-action-btn");
+        if (!actionBtn) return;
+
+        const type = actionBtn.dataset.sheet;
+
+        if (type === "note" && !NOTES_ENABLED) return;
+  if (type === "discount" && !DISCOUNT_ENABLED) return;
+
+
+        // Set title
+        title.textContent =
+          type === "note"
+            ? "Add note for seller"
+            : "Apply discount code";
+
+        // Show correct content
+        sheet.querySelectorAll(".optimaio-sheet-content").forEach(c => {
+          c.classList.toggle("active", c.dataset.content === type);
+        });
+
+        sheet.classList.add("open");
+      });
+
+      /* -----------------------------
+         CLOSE SHEET
+      ----------------------------- */
+      function closeSheet() {
+        sheet.classList.remove("open");
+      }
+
+      document.addEventListener("click", e => {
+        if (e.target.closest(".optimaio-sheet-close")) {
+          closeSheet();
         }
-    
-        prevBtn.onclick = () => show(index - 1);
-        nextBtn.onclick = () => show(index + 1);
+      });
+
+      /* -----------------------------
+         SAVE NOTE (REAL SHOPIFY)
+      ----------------------------- */
+      document.addEventListener("click", async e => {
+        const saveBtn = e.target.closest(".optimaio-sheet-primary");
+        if (!saveBtn) return;
+        if (!NOTES_ENABLED) return;
+
+
+        const textarea = sheet.querySelector(".optimaio-note-textarea");
+        if (!textarea) return;
+
+        saveBtn.disabled = true;
+
+        try {
+          await fetch("/cart/update.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ note: textarea.value })
+          });
+
+          // Refresh cart UI safely
+          window.OptimaioCartController?.refresh();
+
+          closeSheet(); // ✅ FIXED: closes popup
+
+        } catch (err) {
+          console.error("Failed to save note", err);
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+
+      /* -----------------------------
+         APPLY DISCOUNT (REAL SHOPIFY)
+      ----------------------------- */
+      document.addEventListener("click", e => {
+        const applyBtn = e.target.closest(".optimaio-discount-apply");
+        if (!applyBtn) return;
+        if (!DISCOUNT_ENABLED) return;
+
+
+        const input = sheet.querySelector(".optimaio-discount-input");
+        if (!input || !input.value.trim()) return;
+
+        applyBtn.disabled = true;
+
+        // Official Shopify method
+        window.location.href =
+          "/discount/" + encodeURIComponent(input.value.trim());
+      });
+
+
+
+    })();
+    </script>
+    <script>
+      fetch("/cart.js")
+    .then(r => r.json())
+    .then(cart => console.log(cart.note));
+
+    </script>
+
+    <script>
+      (function () {
+        const announcement =
+          window.__OPTIMAIO_CART__?.settings?.announcementBar;
+
+        if (!announcement) return;
+
+        const messages = Array.isArray(announcement.messages)
+          ? announcement.messages.filter(Boolean)
+          : [];
+
+        if (!messages.length) return;
+
+        const autoScroll = announcement.autoScroll === true;
+
+        const viewport = document.getElementById("optimaio-announcement-viewport");
+        if (!viewport) return;
+
+        const bar = viewport.closest(".optimaio-announcement-bar");
+        const prevBtn = bar.querySelector(".optimaio-announcement-arrow.left");
+        const nextBtn = bar.querySelector(".optimaio-announcement-arrow.right");
+
+        /* ----------------------------
+           1️⃣ Render messages
+        ---------------------------- */
+        viewport.innerHTML = "";
+
+        messages.forEach((text, i) => {
+          const el = document.createElement("div");
+          el.className = "optimaio-announcement-item";
+          if (i === 0) el.classList.add("active");
+          el.textContent = text;
+          viewport.appendChild(el);
+        });
+
+        const items = viewport.querySelectorAll(".optimaio-announcement-item");
+        let index = 0;
+
+        /* ----------------------------
+           2️⃣ AUTO SCROLL MODE
+        ---------------------------- */
+        if (autoScroll && items.length > 1) {
+          prevBtn.style.display = "none";
+          nextBtn.style.display = "none";
+
+          if (window.__OPTIMAIO_ANNOUNCEMENT_TIMER__) {
+            clearInterval(window.__OPTIMAIO_ANNOUNCEMENT_TIMER__);
+          }
+
+          window.__OPTIMAIO_ANNOUNCEMENT_TIMER__ = setInterval(() => {
+            items[index].classList.remove("active");
+            index = (index + 1) % items.length;
+            items[index].classList.add("active");
+          }, 4000);
+
+          return;
+        }
+
+        /* ----------------------------
+           3️⃣ MANUAL MODE (ARROWS)
+        ---------------------------- */
+        if (!autoScroll && items.length > 1) {
+          prevBtn.style.display = "block";
+          nextBtn.style.display = "block";
+
+          function show(i) {
+            items[index].classList.remove("active");
+            index = (i + items.length) % items.length;
+            items[index].classList.add("active");
+          }
+
+          prevBtn.onclick = () => show(index - 1);
+          nextBtn.onclick = () => show(index + 1);
+        }
+      })();
+      </script>
+
+
+
+
+
+  <script>
+    (function () {
+      const data = window.__OPTIMAIO_CART__ || {};
+      const timer = data.timer;
+
+          /* ----------------------------
+         🧹 CLEAR CART HELPER
+      ---------------------------- */
+      async function optimaioClearCart() {
+        try {
+          await fetch("/cart/clear.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+
+          console.log("🧹 Optimaio: Cart cleared by timer");
+
+          // Refresh Optimaio UI
+          window.OptimaioCartController?.refresh();
+
+          // Optional lifecycle event
+          document.dispatchEvent(
+            new CustomEvent("optimaio:cart:cleared", {
+              detail: { source: "timer" }
+            })
+          );
+
+        } catch (err) {
+          console.error("❌ Optimaio: Failed to clear cart", err);
+        }
+      }
+
+
+      const container = document.getElementById("optimaio-countdown");
+
+  if (!timer || timer.status !== "active") {
+    if (container) container.remove();
+    return;
+  }
+
+  // ✅ ADD THIS LINE
+  container.style.display = "flex";
+
+  const label = container.querySelector("#optimaio-countdown-label");
+  if (label) {
+    label.textContent = timer.timerText || "Offer ends in";
+  }
+
+
+      const boxes = container.querySelectorAll(".optimaio-time strong");
+      if (boxes.length !== 4) return;
+
+      const STORAGE_KEY = "optimaio_timer_start";
+
+      /* ----------------------------
+         Helpers
+      ---------------------------- */
+      function parseDate(date, time) {
+        return new Date(`${date} ${time || "12:00 AM"}`).getTime();
+      }
+
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      /* ----------------------------
+     ACTIVE DATES (VISIBILITY ONLY)
+  ---------------------------- */
+  let isVisible = true;
+  const now = Date.now();
+
+  if (timer.activeDates?.start?.date) {
+    const start = parseDate(
+      timer.activeDates.start.date,
+      timer.activeDates.start.time
+    );
+    if (now < start) {
+      isVisible = false;
+    }
+  }
+
+  if (timer.activeDates?.end?.date) {
+    const end = parseDate(
+      timer.activeDates.end.date,
+      timer.activeDates.end.time
+    );
+    if (now > end) {
+      isVisible = false;
+    }
+  }
+
+  container.style.display = isVisible ? "flex" : "none";
+
+      /* ----------------------------
+         DETERMINE END TIME
+      ---------------------------- */
+      let endTime;
+
+      /* 🔁 MODE: DURATION (cart-based) */
+      if (timer.timerConfig.timerMode === "duration") {
+        let startTime = localStorage.getItem(STORAGE_KEY);
+
+        // ⏱ First product added → start timer
+        if (!startTime) {
+          startTime = Date.now();
+          localStorage.setItem(STORAGE_KEY, startTime);
+        }
+
+        const d = timer.timerConfig.duration;
+        endTime =
+          Number(startTime) +
+          (+d.hours * 3600000) +
+          (+d.minutes * 60000) +
+          (+d.seconds * 1000);
+      }
+
+      /* 📅 MODE: SPECIFIC (fixed end time) */
+      if (
+        timer.timerConfig.timerMode === "specific" &&
+        timer.timerConfig.activeDates?.end?.date
+      ) {
+        endTime = parseDate(
+          timer.timerConfig.activeDates.end.date,
+          timer.timerConfig.activeDates.end.time
+        );
+      }
+
+      if (!endTime) return;
+
+      /* ----------------------------
+         COUNTDOWN LOOP
+      ---------------------------- */
+      let interval; // 👈 declare upfront
+
+  function updateCountdown() {
+    let diff = endTime - Date.now();
+
+    if (diff <= 0) {
+      if (interval) clearInterval(interval);
+
+      const isDuration = timer.timerConfig.timerMode === "duration";
+      const shouldLoop =
+        isDuration && timer.afterAction === "refresh";
+
+      /* 🔁 LOOP ONLY */
+      if (shouldLoop) {
+        const d = timer.timerConfig.duration;
+        const newStart = Date.now();
+
+        localStorage.setItem(STORAGE_KEY, newStart);
+
+        endTime =
+          newStart +
+          (+d.hours * 3600000) +
+          (+d.minutes * 60000) +
+          (+d.seconds * 1000);
+
+        updateCountdown();
+        interval = setInterval(updateCountdown, 1000);
+        return;
+      }
+
+      /* 🧹 CLEAR CART */
+      if (timer.afterAction === "clear_cart") {
+        optimaioClearCart();
+      }
+
+      /* ❌ FINAL EXPIRE */
+      localStorage.removeItem(STORAGE_KEY);
+
+      if (timer.expiredMessage) {
+        container.textContent = timer.expiredMessage;
+      } else {
+        container.style.display = "none";
+      }
+
+      return;
+    }
+
+
+    const days = Math.floor(diff / 86400000);
+    diff -= days * 86400000;
+
+    const hours = Math.floor(diff / 3600000);
+    diff -= hours * 3600000;
+
+    const minutes = Math.floor(diff / 60000);
+    diff -= minutes * 60000;
+
+    const seconds = Math.floor(diff / 1000);
+
+    boxes[0].textContent = pad(days);
+    boxes[1].textContent = pad(hours);
+    boxes[2].textContent = pad(minutes);
+    boxes[3].textContent = pad(seconds);
+  }
+
+  // ✅ start loop AFTER declaration
+  updateCountdown();
+  interval = setInterval(updateCountdown, 1000);
+
+    })();
+    </script>
+
+
+
+
+  <script>
+    (function () {
+      /* ----------------------------------
+         1️⃣ Detect cart page
+      ---------------------------------- */
+      const isCartPage =
+        location.pathname === "/cart" ||
+        document.body.classList.contains("template-cart");
+
+      if (!isCartPage) return;
+
+      /* ----------------------------------
+         2️⃣ Mark page context
+      ---------------------------------- */
+      document.body.classList.add("optimaio-cart-page-context");
+
+
+
+      /* ----------------------------------
+         3️⃣ Locate drawer
+      ---------------------------------- */
+      const drawer = document.getElementById("optimaio-cart-drawer");
+      if (!drawer) return;
+
+      /* ----------------------------------
+         4️⃣ Move drawer into <main>
+      ---------------------------------- */
+      const main =
+        document.querySelector("main") ||
+        document.getElementById("MainContent");
+
+      if (main && !main.contains(drawer)) {
+        main.prepend(drawer);
+      }
+
+      /* ----------------------------------
+         5️⃣ Switch to PAGE mode
+         (⚠️ DO NOT remove .open anymore)
+      ---------------------------------- */
+      drawer.classList.add("optimaio-cart-page");
+      drawer.classList.add("open"); // ✅ REQUIRED for CSS + logic
+      drawer.setAttribute("data-context", "page");
+
+      /* ----------------------------------
+         6️⃣ 🔥 FORCE FULL INIT (REAL FIX)
+      ---------------------------------- */
+      function forceOptimaioInit() {
+        // 1️⃣ Logical open flag (internal guards)
+        window.__OPTIMAIO_DRAWER_OPEN__ = true;
+
+        // 2️⃣ Force cart render
+        if (typeof window.getCartAndRender === "function") {
+          window.getCartAndRender();
+        }
+
+        // 3️⃣ Force controller refresh (items, gifts, progress)
+        window.OptimaioCartController?.refresh();
+
+        // 4️⃣ Fire lifecycle event (observers, BXGY, progress bar)
+        document.dispatchEvent(
+          new CustomEvent("optimaio:open", {
+            detail: { context: "page", silent: true }
+          })
+        );
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", forceOptimaioInit);
+      } else {
+        forceOptimaioInit();
       }
     })();
     </script>
-    
-    
-  
+{% endcomment %}
 
-
-<script>
-  (function () {
-    const data = window.__OPTIMAIO_CART__ || {};
-    const timer = data.timer;
-
-        /* ----------------------------
-       🧹 CLEAR CART HELPER
-    ---------------------------- */
-    async function optimaioClearCart() {
-      try {
-        await fetch("/cart/clear.js", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" }
-        });
-
-        console.log("🧹 Optimaio: Cart cleared by timer");
-
-        // Refresh Optimaio UI
-        window.OptimaioCartController?.refresh();
-
-        // Optional lifecycle event
-        document.dispatchEvent(
-          new CustomEvent("optimaio:cart:cleared", {
-            detail: { source: "timer" }
-          })
-        );
-
-      } catch (err) {
-        console.error("❌ Optimaio: Failed to clear cart", err);
-      }
-    }
-
-  
-    const container = document.getElementById("optimaio-countdown");
-
-if (!timer || timer.status !== "active") {
-  if (container) container.remove();
-  return;
-}
-
-// ✅ ADD THIS LINE
-container.style.display = "flex";
-
-const label = container.querySelector("#optimaio-countdown-label");
-if (label) {
-  label.textContent = timer.timerText || "Offer ends in";
-}
-
-  
-    const boxes = container.querySelectorAll(".optimaio-time strong");
-    if (boxes.length !== 4) return;
-  
-    const STORAGE_KEY = "optimaio_timer_start";
-  
-    /* ----------------------------
-       Helpers
-    ---------------------------- */
-    function parseDate(date, time) {
-      return new Date(`${date} ${time || "12:00 AM"}`).getTime();
-    }
-  
-    function pad(n) {
-      return String(n).padStart(2, "0");
-    }
-  
-    /* ----------------------------
-   ACTIVE DATES (VISIBILITY ONLY)
----------------------------- */
-let isVisible = true;
-const now = Date.now();
-
-if (timer.activeDates?.start?.date) {
-  const start = parseDate(
-    timer.activeDates.start.date,
-    timer.activeDates.start.time
-  );
-  if (now < start) {
-    isVisible = false;
-  }
-}
-
-if (timer.activeDates?.end?.date) {
-  const end = parseDate(
-    timer.activeDates.end.date,
-    timer.activeDates.end.time
-  );
-  if (now > end) {
-    isVisible = false;
-  }
-}
-
-container.style.display = isVisible ? "flex" : "none";
-
-    /* ----------------------------
-       DETERMINE END TIME
-    ---------------------------- */
-    let endTime;
-  
-    /* 🔁 MODE: DURATION (cart-based) */
-    if (timer.timerConfig.timerMode === "duration") {
-      let startTime = localStorage.getItem(STORAGE_KEY);
-  
-      // ⏱ First product added → start timer
-      if (!startTime) {
-        startTime = Date.now();
-        localStorage.setItem(STORAGE_KEY, startTime);
-      }
-  
-      const d = timer.timerConfig.duration;
-      endTime =
-        Number(startTime) +
-        (+d.hours * 3600000) +
-        (+d.minutes * 60000) +
-        (+d.seconds * 1000);
-    }
-  
-    /* 📅 MODE: SPECIFIC (fixed end time) */
-    if (
-      timer.timerConfig.timerMode === "specific" &&
-      timer.timerConfig.activeDates?.end?.date
-    ) {
-      endTime = parseDate(
-        timer.timerConfig.activeDates.end.date,
-        timer.timerConfig.activeDates.end.time
-      );
-    }
-  
-    if (!endTime) return;
-  
-    /* ----------------------------
-       COUNTDOWN LOOP
-    ---------------------------- */
-    let interval; // 👈 declare upfront
-
-function updateCountdown() {
-  let diff = endTime - Date.now();
-
-  if (diff <= 0) {
-    if (interval) clearInterval(interval);
-  
-    const isDuration = timer.timerConfig.timerMode === "duration";
-    const shouldLoop =
-      isDuration && timer.afterAction === "refresh";
-  
-    /* 🔁 LOOP ONLY */
-    if (shouldLoop) {
-      const d = timer.timerConfig.duration;
-      const newStart = Date.now();
-  
-      localStorage.setItem(STORAGE_KEY, newStart);
-  
-      endTime =
-        newStart +
-        (+d.hours * 3600000) +
-        (+d.minutes * 60000) +
-        (+d.seconds * 1000);
-  
-      updateCountdown();
-      interval = setInterval(updateCountdown, 1000);
-      return;
-    }
-  
-    /* 🧹 CLEAR CART */
-    if (timer.afterAction === "clear_cart") {
-      optimaioClearCart();
-    }
-  
-    /* ❌ FINAL EXPIRE */
-    localStorage.removeItem(STORAGE_KEY);
-  
-    if (timer.expiredMessage) {
-      container.textContent = timer.expiredMessage;
-    } else {
-      container.style.display = "none";
-    }
-  
-    return;
-  }
-  
-  
-  const days = Math.floor(diff / 86400000);
-  diff -= days * 86400000;
-
-  const hours = Math.floor(diff / 3600000);
-  diff -= hours * 3600000;
-
-  const minutes = Math.floor(diff / 60000);
-  diff -= minutes * 60000;
-
-  const seconds = Math.floor(diff / 1000);
-
-  boxes[0].textContent = pad(days);
-  boxes[1].textContent = pad(hours);
-  boxes[2].textContent = pad(minutes);
-  boxes[3].textContent = pad(seconds);
-}
-
-// ✅ start loop AFTER declaration
-updateCountdown();
-interval = setInterval(updateCountdown, 1000);
-
-  })();
-  </script>
-  
-  
-
-
-
-{% comment %} <script src="{{ 'free-gift.js' | asset_url }}" defer></script> 
-<script src="{{ 'bxgy.js' | asset_url }}" defer></script>  {% endcomment %}
-
-
- 
-{% comment %} <style>
- 
-/* ✅ All styles prefixed with optimaio- */
-.optimaio-cart-item__discount {
-  font-size: 12px;
-  color: #a33;
-  margin-top: 4px;
-  background: #fdeaea;
-  padding: 4px 6px;
-  border-radius: 4px;
-  display: inline-block;
-}
- 
-.optimaio-cart-item-card{display:flex;gap:12px;background:#fff;border:1px solid #eee;border-radius:10px;padding:12px;position:relative;}
-.optimaio-cart-item__image img{width:70px;height:70px;border-radius:8px;object-fit:cover;}
-.optimaio-cart-item__info{flex:1;display:flex;flex-direction:column;justify-content:space-between;}
-.optimaio-cart-item__top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-.optimaio-cart-item__title{font-weight:600;margin:0;line-height:1.4;flex:1;white-space:normal;word-break:break-word;}
-.optimaio-cart-item__remove{flex-shrink:0;background:none;border:none;font-size:16px;cursor:pointer;color:#888;line-height:1;}
-.optimaio-cart-item__remove:hover{color:#d33;}
-.optimaio-cart-item__variant{font-size:12px;color:#666;margin:2px 0 6px;}
-.optimaio-cart-item__bottom{display:flex;justify-content:space-between;align-items:center;margin-top:auto;}
-.optimaio-cart-item__pricing{display:flex;gap:6px;align-items:baseline;}
-.optimaio-compare-at{text-decoration:line-through;color:#999;font-size:12px;}
-.optimaio-price{font-weight:700;color:#222;}
-.optimaio-cart-tab{display:none;}
-.optimaio-cart-drawer[data-active-tab="cart"] .optimaio-cart-tab--cart{display:block;}
-.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-tab--offers{display:block;}
-.optimaio-cart-drawer[data-active-tab="offers"] .optimaio-cart-drawer__summary-checkout{display:none;}
-.optimaio-qty-btn.loading,.optimaio-cart-item__remove.loading,.optimaio-rec-add.loading{position:relative;color:transparent!important;pointer-events:none;}
-.optimaio-qty-btn.loading::after,.optimaio-cart-item__remove.loading::after,.optimaio-rec-add.loading::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:12px;border:2px solid #999;border-top-color:transparent;border-radius:50%;transform:translate(-50%,-50%);animation:optimaio-spin .6s linear infinite;}
-@keyframes optimaio-spin{to{transform:translate(-50%,-50%) rotate(360deg);}}
-#optimaio-corner-cart,.optimaio-cart-drawer{font-family:Inter,sans-serif;box-sizing:border-box;}
-#optimaio-corner-cart{position:fixed;bottom:20px;right:20px;background:#000;color:#fff;padding:10px 16px;border-radius:40px;cursor:pointer;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);}
-#optimaio-corner-cart span{font-weight:700;margin:0 4px;}
-.optimaio-cart-drawer{position:fixed;top:0;right:0;width:90%;max-width:420px;height:100%;background:#fff7f8;transform:translateX(100%);transition:transform .3s ease;box-shadow:-3px 0 12px rgba(0,0,0,0.25);z-index:10000;display:flex;flex-direction:column;}
-.optimaio-cart-drawer.open{transform:translateX(0);}
-.optimaio-cart-drawer__header{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;z-index:5;}
-.optimaio-cart-drawer__header h2{font-size:18px;margin:0;font-weight:600;}
-.optimaio-cart-drawer__close{font-size:20px;background:none;border:none;cursor:pointer;}
-.optimaio-cart-drawer__middle{flex:1;overflow-y:auto;padding:12px 16px;}
-.optimaio-cart-drawer__middle::-webkit-scrollbar{width:6px;}
-.optimaio-cart-drawer__middle::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
-.optimaio-cart-drawer__alert{background:#fdeaea;color:#a33;padding:8px;border-radius:8px;text-align:center;font-size:13px;margin-bottom:8px;}
-.optimaio-cart-drawer__progress{display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;}
-.optimaio-cart-drawer__progress .optimaio-step{flex:1;text-align:center;border-bottom:2px solid #ccc;padding-bottom:3px;}
-.optimaio-cart-drawer__progress .done{border-color:#d48b8b;font-weight:600;}
-.optimaio-cart-drawer__items{display:flex;flex-direction:column;gap:10px;}
-.optimaio-cart-drawer__empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;color:#666;text-align:center;gap:12px;}
-.optimaio-continue-btn{background:#000;color:#fff;padding:10px 20px;border-radius:25px;font-size:14px;text-decoration:none;}
-.optimaio-recommendations-list{display:flex;overflow-x:auto;gap:10px;padding-bottom:8px;}
-.optimaio-recommendation-card{flex:0 0 75%;background:#fff;border:1px solid #eee;border-radius:8px;padding:8px;display:flex;align-items:center;gap:10px;}
-.optimaio-rec-image img{width:60px;height:60px;border-radius:6px;object-fit:cover;}
-.optimaio-rec-title{font-size:12px;font-weight:600;margin:0;}
-.optimaio-rec-price{font-size:12px;font-weight:500;color:#222;margin:2px 0;}
-.optimaio-rec-add{background:#000;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:12px;}
-.optimaio-cart-drawer__summary-checkout{flex-shrink:0;border-top:1px solid #eee;padding:12px 14px;background:#fff;}
-.optimaio-discount-row,.optimaio-total-row{display:flex;justify-content:space-between;font-size:14px;}
-.optimaio-discount-label,.optimaio-discount-amount{color:#a33;}
-.optimaio-total-label{font-weight:600;}
-.optimaio-total-amount{font-weight:700;}
-.optimaio-checkout-btn{margin-top:8px;width:100%;background:#000;color:#fff;padding:10px;border:none;border-radius:6px;font-weight:600;cursor:pointer;}
-.optimaio-cart-drawer__footer{flex-shrink:0;display:flex;justify-content:space-around;border-top:1px solid #eee;background:#fff;padding:12px;position:sticky;bottom:0;}
-.optimaio-cart-drawer__footer button{border:none;background:none;cursor:pointer;font-size:14px;font-weight:500;color:#444;}
-.optimaio-cart-drawer__footer button.active{color:#d48b8b;font-weight:600;}
-@media (max-width:768px){#optimaio-corner-cart{bottom:15px;right:15px;font-size:13px;padding:8px 14px;}}
-</style> {% endcomment %}
- 
-<script>
-  (function () {
-    /* ----------------------------------
-       1️⃣ Detect cart page
-    ---------------------------------- */
-    const isCartPage =
-      location.pathname === "/cart" ||
-      document.body.classList.contains("template-cart");
-  
-    if (!isCartPage) return;
-  
-    /* ----------------------------------
-       2️⃣ Mark page context
-    ---------------------------------- */
-    document.body.classList.add("optimaio-cart-page-context");
-
-    
-  
-    /* ----------------------------------
-       3️⃣ Locate drawer
-    ---------------------------------- */
-    const drawer = document.getElementById("optimaio-cart-drawer");
-    if (!drawer) return;
-  
-    /* ----------------------------------
-       4️⃣ Move drawer into <main>
-    ---------------------------------- */
-    const main =
-      document.querySelector("main") ||
-      document.getElementById("MainContent");
-  
-    if (main && !main.contains(drawer)) {
-      main.prepend(drawer);
-    }
-  
-    /* ----------------------------------
-       5️⃣ Switch to PAGE mode
-       (⚠️ DO NOT remove .open anymore)
-    ---------------------------------- */
-    drawer.classList.add("optimaio-cart-page");
-    drawer.classList.add("open"); // ✅ REQUIRED for CSS + logic
-    drawer.setAttribute("data-context", "page");
-  
-    /* ----------------------------------
-       6️⃣ 🔥 FORCE FULL INIT (REAL FIX)
-    ---------------------------------- */
-    function forceOptimaioInit() {
-      // 1️⃣ Logical open flag (internal guards)
-      window.__OPTIMAIO_DRAWER_OPEN__ = true;
-  
-      // 2️⃣ Force cart render
-      if (typeof window.getCartAndRender === "function") {
-        window.getCartAndRender();
-      }
-  
-      // 3️⃣ Force controller refresh (items, gifts, progress)
-      window.OptimaioCartController?.refresh();
-  
-      // 4️⃣ Fire lifecycle event (observers, BXGY, progress bar)
-      document.dispatchEvent(
-        new CustomEvent("optimaio:open", {
-          detail: { context: "page", silent: true }
-        })
-      );
-    }
-  
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", forceOptimaioInit);
-    } else {
-      forceOptimaioInit();
-    }
-  })();
-  </script>
-  
-  
-  
-  
-  
 {% schema %}
 {
-"name": "Optimaio Corner Cart",
-"target": "body",
-"settings": []
+  "name": "Optimaio Corner Cart",
+  "target": "body",
+  "settings": []
 }
 {% endschema %}

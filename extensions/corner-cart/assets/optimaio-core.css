@@ -1430,3 +1430,87 @@ body.optimaio-cart-open {
     var(--progress-end)
   );
 }
+
+
+
+/* One click Upselll CSS */
+
+
+.optimaio-cart-drawer-oneclick-upsell {
+  padding: 0 12px 8px;
+  margin: 0 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+.optimaio-oneclick-upsell-title {
+  font-size: 12px;
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.optimaio-oneclick-upsell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.optimaio-mini-upsell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+}
+
+.optimaio-mini-upsell__image {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.optimaio-mini-upsell__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.optimaio-mini-upsell__text {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.optimaio-mini-upsell__title {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optimaio-mini-upsell__price {
+  font-size: 12px;
+  color: var(--text-primary);
+  margin: 2px 0 0;
+}
+
+.optimaio-mini-upsell__btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.optimaio-mini-upsell__add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

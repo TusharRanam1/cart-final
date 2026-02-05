@@ -26,4 +26,7 @@ body[data-optimaio-theme="theme7"] {
     /* ---------- Discounts ---------- */
     --discount-text: #5eead4;
   }
-  
+    /* Progress fill – default (solid) */
+    .optimaio-progress-fill {
+      background: var(--accent);
+    }

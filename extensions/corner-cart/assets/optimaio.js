@@ -1,35 +1,3 @@
-// /* GLOBAL Optimaio Campaign Loader — shared by BXGY + FreeGift */
-// window.__OPTIMAIO_CAMPAIGN_CACHE__ = {
-//   data: null,
-//   time: 0,
-//   TTL: 60000 // 1 min
-// };
-
-// window.loadOptimaioCampaigns = async function(force = false) {
-//   const cache = window.__OPTIMAIO_CAMPAIGN_CACHE__;
-//   const now = Date.now();
-
-//   if (!force && cache.data && now - cache.time < cache.TTL) {
-//     return cache.data;
-//   }
-
-//   try {
-//     const res = await fetch("/apps/optimaio-cart", { cache: "no-store" });
-//     const json = await res.json();
-
-//     /* ✅ ADD THIS LINE HERE */
-//     window.__OPTIMAIO_CAMPAIGNS__ = json;
-
-//     cache.data = json;
-//     cache.time = now;
-//     return json;
-//   } catch (err) {
-//     console.warn("⚠️ Failed to fetch campaigns", err);
-//     return cache.data || null;
-//   }
-// };
-
-
 
 /* ----------------------------------
    GLOBAL CART PAGE FLAG

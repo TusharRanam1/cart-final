@@ -33,7 +33,7 @@ body[data-optimaio-theme="theme0"] {
   }
   
   /* Progress fill – default (solid) */
-  body[data-optimaio-theme="theme0"] .optimaio-progress-fill {
+  .optimaio-progress-fill {
     background: var(--accent);
   }
   
