@@ -8,7 +8,7 @@ function TogglePill({ value, onChange, labels = ["Yes", "No"] }) {
       background="bg-surface-secondary"
       borderRadius="200"
       padding="100"
-      inlineSize="fit-content"
+      width="fit-content"
     >
       <InlineStack gap="100">
         <Button
@@ -58,7 +58,7 @@ export default function CartFeaturesSettings({ value, onChange }) {
             background="bg-surface-secondary"
             borderRadius="200"
             padding="100"
-            inlineSize="fit-content"
+            width="fit-content"
           >
             <InlineStack gap="100">
               <Button

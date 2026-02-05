@@ -26,13 +26,7 @@ export default function DynamicCollapsible({
   return (
     <Card>
       {/* Header */}
-      <Box
-        padding="100"
-        borderColor="border-subdued"
-        background="bg-surface"
-        borderTopStartRadius="300"
-        borderTopEndRadius="300"
-      >
+      <Box padding="100" borderColor="border-subdued" background="bg-surface">
         <BlockStack gap="050">
           <InlineStack align="space-between" blockAlign="center">
             {/* LEFT SIDE — Icon + Title */}
@@ -55,22 +49,13 @@ export default function DynamicCollapsible({
             </Button>
           </InlineStack>
 
-          <div
-            style={{
-              maxHeight: open ? "0px" : "100px",
-              opacity: open ? 0 : 1,
-              overflow: "hidden",
-              transition: "all 400ms ease-in-out",
-            }}
-          >
-            {!open && description && (
-              <Text tone="subdued" variant="bodyMd">
-                {description}
-              </Text>
-            )}
-          </div>
+          {!open && description && (
+            <Text tone="subdued" variant="bodyMd">
+              {description}
+            </Text>
+          )}
 
-          {open && <Divider borderColor="border" />}
+          {open && <Divider borderColor="border" borderWidth="050" />}
         </BlockStack>
       </Box>
 
@@ -87,6 +72,19 @@ export default function DynamicCollapsible({
               Add your content here (e.g. campaign goals, details, or settings).
             </Text>
           )}
+        </Box>
+
+        {/* Bottom-right collapse action */}
+        <Box paddingBlockStart="200">
+          <InlineStack align="end">
+            <Button
+              variant="plain"
+              icon={MinimizeIcon}
+              onClick={() => setOpen(false)}
+            >
+              Collapse
+            </Button>
+          </InlineStack>
         </Box>
       </Collapsible>
     </Card>

@@ -618,9 +618,9 @@ roots.forEach(root => {
   </div>
 
   <div class="optimaio-cart-drawer-oneclick-upsell">
-    <p class="optimaio-oneclick-upsell-title">You might also like</p>
-  <div id="optimaio-oneclick-upsell" class="optimaio-oneclick-upsell"></div>
-   </div>
+    <div id="optimaio-oneclick-upsell" class="optimaio-oneclick-upsell"></div>
+  </div>
+  
   
  
   <!-- Footer Summary -->
@@ -712,6 +712,116 @@ roots.forEach(root => {
 
   
 </div>
+
+<script>
+  (function () {
+    function applyCartTexts() {
+      const texts = window.__OPTIMAIO_CART__?.settings?.cartTexts;
+      if (!texts) return;
+  
+      /* =============================
+         CART — HEADER
+      ============================= */
+      if (texts.header?.cartHeaderText) {
+        const title = document.querySelector(".optimaio-cart-tile");
+        if (title) title.textContent = texts.header.cartHeaderText;
+      }
+  
+      /* =============================
+         CART — FOOTER TABS
+      ============================= */
+      if (texts.footer?.cartButtonText) {
+        const cartTab = document.querySelector('.optimaio-tab-btn[data-target="cart"]');
+        if (cartTab) {
+          cartTab.childNodes[cartTab.childNodes.length - 1].textContent =
+            " " + texts.footer.cartButtonText;
+        }
+      }
+  
+      if (texts.footer?.offersButtonText) {
+        const offersTab = document.querySelector('.optimaio-tab-btn[data-target="offers"]');
+        if (offersTab) {
+          offersTab.childNodes[offersTab.childNodes.length - 1].textContent =
+            " " + texts.footer.offersButtonText;
+        }
+      }
+  
+      /* =============================
+         CART — SUMMARY + BUTTONS
+      ============================= */
+      if (texts.side?.discountText) {
+        const el = document.querySelector(".optimaio-discount-label");
+        if (el) el.textContent = texts.side.discountText + ":";
+      }
+  
+      if (texts.side?.totalText) {
+        const el = document.querySelector(".optimaio-total-label");
+        if (el) el.textContent = texts.side.totalText + ":";
+      }
+  
+      if (texts.side?.addNoteButtonText) {
+        document
+          .querySelectorAll('.optimaio-action-btn[data-sheet="note"]')
+          .forEach(btn => {
+            btn.lastChild.textContent = " " + texts.side.addNoteButtonText;
+          });
+      }
+  
+      if (texts.side?.discountCodeButtonText) {
+        document
+          .querySelectorAll('.optimaio-action-btn[data-sheet="discount"]')
+          .forEach(btn => {
+            btn.lastChild.textContent = " " + texts.side.discountCodeButtonText;
+          });
+      }
+  
+      if (texts.side?.checkoutButtonText) {
+        const btn = document.querySelector(".optimaio-checkout-btn");
+        if (btn) btn.textContent = texts.side.checkoutButtonText;
+      }
+  
+      /* =============================
+         OFFERS — TITLE + BADGES
+         (NEW, minimal)
+      ============================= */
+      const offers = texts.offers;
+  
+      if (offers?.offerHeaderText) {
+        const title = document.querySelector(".optimaio-offers-title");
+        if (title) title.textContent = offers.offerHeaderText;
+      }
+  
+      if (offers?.badgeLockedText) {
+        document
+          .querySelectorAll(".optimaio-offer-badge.locked")
+          .forEach(el => {
+            el.textContent = offers.badgeLockedText;
+          });
+      }
+  
+      if (offers?.badgeUnlockedText) {
+        document
+          .querySelectorAll(".optimaio-offer-badge.unlocked")
+          .forEach(el => {
+            el.textContent = offers.badgeUnlockedText;
+          });
+      }
+    }
+  
+    /* Initial load */
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", applyCartTexts);
+    } else {
+      applyCartTexts();
+    }
+  
+    /* Re-apply on dynamic updates */
+    document.addEventListener("optimaio:open", applyCartTexts);
+    document.addEventListener("optimaio:gifts:updated", applyCartTexts);
+  })();
+  </script>
+  
+  
 {% comment %} <script>
   (function () {
     if (window.__OPTIMAIO_ONECLICK_INIT__) return;
@@ -1265,19 +1375,33 @@ if (label) {
     }
   
     /* ----------------------------
-       START DATE GUARD (optional)
-    ---------------------------- */
-    if (timer.activeDates?.start?.date) {
-      const start = parseDate(
-        timer.activeDates.start.date,
-        timer.activeDates.start.time
-      );
-      if (Date.now() < start) {
-        container.style.display = "none";
-        return;
-      }
-    }
-  
+   ACTIVE DATES (VISIBILITY ONLY)
+---------------------------- */
+let isVisible = true;
+const now = Date.now();
+
+if (timer.activeDates?.start?.date) {
+  const start = parseDate(
+    timer.activeDates.start.date,
+    timer.activeDates.start.time
+  );
+  if (now < start) {
+    isVisible = false;
+  }
+}
+
+if (timer.activeDates?.end?.date) {
+  const end = parseDate(
+    timer.activeDates.end.date,
+    timer.activeDates.end.time
+  );
+  if (now > end) {
+    isVisible = false;
+  }
+}
+
+container.style.display = isVisible ? "flex" : "none";
+
     /* ----------------------------
        DETERMINE END TIME
     ---------------------------- */

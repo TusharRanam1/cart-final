@@ -15,7 +15,6 @@ import ProductPickerModal from "./ProductPickerModal";
 export default function OneClickUpsellSettings({
   enabled,
   setEnabled,
-
   ctaType,
   setCtaType,
   oneClickProducts,
@@ -30,6 +29,11 @@ export default function OneClickUpsellSettings({
   setShowProductImage,
   showInCartList,
   setShowInCartList,
+  // ✅ NEW
+  upsellTitle,
+  setUpsellTitle,
+  buttonText,
+  setButtonText,
 }) {
   const insertVariable = (variable) => {
     setUpsellText((prev) => `${prev} ${variable}`.trim());
@@ -37,9 +41,9 @@ export default function OneClickUpsellSettings({
   };
 
   return (
-    <>
+    <BlockStack gap={300}>
       {/* ENABLE / DISABLE */}
-      <Box paddingBlockStart="300">
+      <Box>
         <HelpHeader
           title="Enable One-Click Upsell"
           helpText="Turn the one-click upsell on or off."
@@ -50,7 +54,7 @@ export default function OneClickUpsellSettings({
             background="bg-surface-secondary"
             borderRadius="200"
             padding="100"
-            inlineSize="fit-content"
+            width="fit-content"
           >
             <Button
               size="slim"
@@ -77,7 +81,7 @@ export default function OneClickUpsellSettings({
 
       {/* ⛔ HIDE EVERYTHING IF DISABLED */}
       {!enabled && (
-        <Box paddingBlockStart="200">
+        <Box>
           <Text tone="subdued">
             One-click upsell is disabled. Enable it to configure settings.
           </Text>
@@ -86,9 +90,35 @@ export default function OneClickUpsellSettings({
 
       {/* ✅ SHOW SETTINGS ONLY IF ENABLED */}
       {enabled && (
-        <>
+        <BlockStack gap="300">
+          {/* One-click Upsell Title */}
+          <BlockStack gap="200">
+            <HelpHeader
+              title="Upsell title"
+              helpText="Title shown above the one-click upsell"
+            />
+            <TextField
+              value={upsellTitle}
+              onChange={setUpsellTitle}
+              placeholder="Frequently bought together"
+            />
+          </BlockStack>
+
+          {/* One-click Button Text */}
+          <BlockStack gap="200">
+            <HelpHeader
+              title="Button text"
+              helpText="Text shown on the one-click upsell button"
+            />
+            <TextField
+              value={buttonText}
+              onChange={setButtonText}
+              placeholder="Add to cart"
+            />
+          </BlockStack>
+
           {/* CTA TYPE */}
-          <Box paddingBlockStart="300">
+          <Box>
             <HelpHeader
               title="Select CTA type"
               helpText="Choose how the upsell action will be displayed in the cart."
@@ -99,7 +129,7 @@ export default function OneClickUpsellSettings({
                 background="bg-surface-secondary"
                 borderRadius="200"
                 padding="100"
-                inlineSize="fit-content"
+                width="fit-content"
               >
                 <InlineStack gap="100">
                   <Button
@@ -123,7 +153,7 @@ export default function OneClickUpsellSettings({
           </Box>
 
           {/* PRODUCT SELECT */}
-          <Box paddingBlockStart="300">
+          <Box>
             <HelpHeader
               title="Select upsell product"
               helpText="Only one product can be selected for one-click upsell."
@@ -137,7 +167,7 @@ export default function OneClickUpsellSettings({
           </Box>
 
           {oneClickProducts.length > 0 && (
-            <Box paddingBlockStart="300">
+            <Box>
               <Card padding="200">
                 <InlineStack gap="300" blockAlign="center">
                   <Thumbnail
@@ -166,7 +196,7 @@ export default function OneClickUpsellSettings({
           />
 
           {/* UPSELL TEXT */}
-          <Box paddingBlockStart="300">
+          <Box>
             <InlineStack align="space-between" blockAlign="center">
               <HelpHeader title="Upsell text" />
 
@@ -229,7 +259,7 @@ export default function OneClickUpsellSettings({
           </Box>
 
           {/* SHOW IMAGE */}
-          <Box paddingBlockStart="300">
+          <Box>
             <HelpHeader title="Show product image" />
 
             <InlineStack gap="100">
@@ -237,7 +267,7 @@ export default function OneClickUpsellSettings({
                 background="bg-surface-secondary"
                 borderRadius="200"
                 padding="100"
-                inlineSize="fit-content"
+                width="fit-content"
               >
                 <Button
                   size="slim"
@@ -259,7 +289,7 @@ export default function OneClickUpsellSettings({
           </Box>
 
           {/* SHOW IN CART */}
-          <Box paddingBlockStart="300">
+          <Box>
             <HelpHeader title="Show in cart item list" />
 
             <InlineStack gap="100">
@@ -267,7 +297,7 @@ export default function OneClickUpsellSettings({
                 background="bg-surface-secondary"
                 borderRadius="200"
                 padding="100"
-                inlineSize="fit-content"
+                width="fit-content"
               >
                 <Button
                   size="slim"
@@ -287,8 +317,8 @@ export default function OneClickUpsellSettings({
               </Box>
             </InlineStack>
           </Box>
-        </>
+        </BlockStack>
       )}
-    </>
+    </BlockStack>
   );
 }

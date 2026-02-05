@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Text,
@@ -8,7 +8,7 @@ import {
   BlockStack,
 } from "@shopify/polaris";
 import { GiftCardIcon } from "@shopify/polaris-icons";
-import { CURRENCY_SYMBOLS } from "../utils/currencyHandler/mapCurrency";
+import { CURRENCY_SYMBOLS } from "../../utils/currencyHandler/mapCurrency";
 
 export default function PreviewCard({
   goals = [],
@@ -196,23 +196,13 @@ export default function PreviewCard({
   const discountText = (() => {
     if (!nextGoal) return "";
 
-    if (nextGoal.type === "free_product") {
-      return "Free gift";
-    }
-
-    if (nextGoal.type === "free_shipping") {
-      return "Free shipping";
-    }
-
     if (nextGoal.type === "order_discount") {
       return nextGoal.discountType === "percentage"
         ? `${nextGoal.discountValue}%`
-        : `${nextGoal.discountValue} ${
-            CURRENCY_SYMBOLS[defaultCurrency] || defaultCurrency
-          }`;
+        : `${nextGoal.discountValue} ${CURRENCY_SYMBOLS[defaultCurrency] || defaultCurrency}`;
     }
 
-    return getGoalLabel(nextGoal);
+    return topGiftTitleBefore || getGoalLabel(nextGoal);
   })();
 
   const goalUnitText = selected === "cart" ? "" : " more items";
@@ -295,17 +285,15 @@ export default function PreviewCard({
         </Text>
       </Box>
 
-      <Box padding="200">
+      <Box padding="400">
         {/* ------------------- TEXT ------------------- */}
 
         {goals.length === 0 ? (
-          <Text variant="bodySm">Add at least 1 milestone to see preview</Text>
+          <Text>Add at least 1 milestone to see preview</Text>
         ) : nextGoal ? (
-          <Text variant="bodySm">
-            {renderedSentence ? renderedSentence : defaultSentence}
-          </Text>
+          <Text>{renderedSentence ? renderedSentence : defaultSentence}</Text>
         ) : (
-          <Text variant="bodySm">
+          <Text>
             {" "}
             {finalProgressText
               ? renderTemplate(finalProgressText)
@@ -422,24 +410,11 @@ export default function PreviewCard({
                   <Icon source={GiftCardIcon} tone="base" />
                 </div>
 
-                <BlockStack gap="0" align="center">
-                  {getWords(
-                    !achieved && beforeTitle
-                      ? renderTemplate(beforeTitle)
-                      : getGoalLabel(goal),
-                  )
-                    .slice(0, 4) // ⭐ ONLY FIRST 4 WORDS
-                    .map((word, index) => (
-                      <Text
-                        key={index}
-                        as="div"
-                        variant="bodySm"
-                        alignment="center"
-                      >
-                        {word}
-                      </Text>
-                    ))}
-                </BlockStack>
+                <Text fontWeight="medium">
+                  {!achieved && beforeTitle
+                    ? renderTemplate(beforeTitle)
+                    : getGoalLabel(goal)}
+                </Text>
               </div>
             );
           })}
@@ -472,10 +447,8 @@ export default function PreviewCard({
 
       {/* ------------------- SLIDER ------------------- */}
       <Box padding="400" borderTopWidth="1" borderColor="border-subdued">
-        <BlockStack gap="200">
-          <Text variant="bodySm">
-            Use this slider to simulate customer progress
-          </Text>
+        <BlockStack gap="300">
+          <Text>Use this slider to simulate customer progress</Text>
 
           <RangeSlider
             min={0}
@@ -490,25 +463,4 @@ export default function PreviewCard({
       </Box>
     </Card>
   );
-}
-
-function getWords(input) {
-  if (!input) return [];
-
-  // Plain string
-  if (typeof input === "string") {
-    return input.split(/\s+/);
-  }
-
-  // React nodes (from renderTemplate)
-  if (Array.isArray(input)) {
-    return input
-      .map((node) =>
-        typeof node === "string" ? node : node?.props?.children || "",
-      )
-      .join(" ")
-      .split(/\s+/);
-  }
-
-  return [];
 }

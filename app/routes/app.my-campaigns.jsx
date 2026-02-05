@@ -18,10 +18,10 @@ import {
   Layout,
   Divider,
   Collapsible,
-  Link,
   Banner,
+  InlineGrid,
 } from "@shopify/polaris";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { authenticate } from "../shopify.server";
 import {
   DeleteIcon,
@@ -40,8 +40,13 @@ import CollectionPickerModal from "./components/CollectionPickerModal";
 import Colabssiblecom from "./components/Colabssiblecom";
 import ActiveDatesPicker from "./components/ActiveDatesPicker";
 import ContentEditor from "./components/ContentEditor";
-import PreviewCard from "./components/PreviewCard";
-import { useRef } from "react";
+import { useSearchParams } from "@remix-run/react";
+import {
+  getInitialContentByGoal,
+  getInitialContentForBxgy,
+} from "./utils/content/initialGoalContent";
+import CampaignGoal from "./components/campaignEdit/CampaignGoal";
+import TieredGoalCard from "./components/campaignEdit/TieredGoalCard";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -52,6 +57,7 @@ export default function CampaignIndexTable() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingCampaign, setEditingCampaign] = useState(null);
+  const [searchParams] = useSearchParams();
 
   const goalRefs = useRef({});
   const lastAddedGoalId = useRef(null);
@@ -166,7 +172,7 @@ export default function CampaignIndexTable() {
         const v = Number(g.discountValue);
         if (g.discountType === "percentage") {
           if (!Number.isFinite(v) || v <= 0 || v > 100) {
-            errs.discountValue = "Enter a % between 1 and 100";
+            errs.discountValue = "Enter % between 1 and 100";
           }
         } else if (g.discountType === "amount") {
           if (!Number.isFinite(v) || v <= 0) {
@@ -267,6 +273,17 @@ export default function CampaignIndexTable() {
   };
 
   // LOAD CAMPAIGNS FROM METAFIELD
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || !campaigns.length) return;
+
+    const campaignToEdit = campaigns.find((c) => c.id === editId);
+
+    if (campaignToEdit) {
+      setEditingCampaign(campaignToEdit);
+    }
+  }, [campaigns, searchParams]);
+
   // ------------------------------------------------------------------
   useEffect(() => {
     async function fetchCampaigns() {
@@ -309,6 +326,14 @@ export default function CampaignIndexTable() {
   // ------------------------------------------------------------------
   useEffect(() => {
     if (editingCampaign) {
+      const resolvedContent =
+        editingCampaign.campaignType === "bxgy"
+          ? editingCampaign.content &&
+            Object.keys(editingCampaign.content).length > 0
+            ? editingCampaign.content
+            : getInitialContentForBxgy()
+          : editingCampaign.content || {};
+
       const snap = {
         campaignName: editingCampaign.campaignName || "",
         status: editingCampaign.status || "draft",
@@ -319,7 +344,7 @@ export default function CampaignIndexTable() {
           start: { date: null, time: null },
           end: null,
         },
-        content: editingCampaign.content || {},
+        content: resolvedContent, // ✅ IMPORTANT
       };
 
       setName(snap.campaignName);
@@ -327,13 +352,14 @@ export default function CampaignIndexTable() {
       setGoals(snap.goals);
       setSelected(snap.trackType);
       setActiveDates(snap.activeDates);
-      setContent(snap.content); // ✅ new
-      setInitialSnapshot(snap);
+
+      setContent(resolvedContent); // ✅ SAME OBJECT
+      setInitialSnapshot(snap); // ✅ SAME CONTENT
 
       setSaveBarOpen(false);
-      setIsInitialized(true); // ✅ mark as ready
+      setIsInitialized(true);
     } else {
-      setIsInitialized(false); // reset on close
+      setIsInitialized(false);
     }
   }, [editingCampaign]);
 
@@ -551,6 +577,24 @@ export default function CampaignIndexTable() {
       newGoal.discountType = "percentage";
       newGoal.discountValue = 10;
     }
+
+    // 🔑 CONTENT DEFAULTS (ADD HERE)
+    const goalIndex = goals.length; // zero-based
+    const suffix =
+      goalIndex === 0
+        ? "st"
+        : goalIndex === 1
+          ? "nd"
+          : goalIndex === 2
+            ? "rd"
+            : "th";
+
+    const goalKey = `${goalIndex + 1}${suffix} goal`;
+
+    setContent((prev) => ({
+      ...prev,
+      [goalKey]: prev[goalKey] || getInitialContentByGoal(newGoal),
+    }));
 
     // free_shipping has no extra config initially
     lastAddedGoalId.current = goalId;
@@ -1168,6 +1212,12 @@ export default function CampaignIndexTable() {
   if (editingCampaign) {
     const isBxgy = editingCampaign?.campaignType === "bxgy";
 
+    function getOrdinal(n) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
     return (
       <Page
         title={
@@ -1252,7 +1302,8 @@ export default function CampaignIndexTable() {
                       </Text>
 
                       {/* Add goal button */}
-                      <div style={{ marginTop: "1rem" }}>
+                      <BlockStack gap="400">
+                        {/* Create goals */}
                         <Popover
                           active={active}
                           activator={activator}
@@ -1275,451 +1326,77 @@ export default function CampaignIndexTable() {
                             ]}
                           />
                         </Popover>
-                      </div>
 
-                      {/* Render all goals (full original milestone editor UI) */}
-                      {goals.map((goal, index) => (
-                        <div
-                          key={goal.id}
-                          ref={(el) => {
-                            if (el) goalRefs.current[goal.id] = el;
-                          }}
-                          style={{ marginTop: "1rem" }}
-                        >
-                          <Layout>
-                            {/* 🔹 Left Side: Goal Input */}
-                            <Layout.Section>
-                              <InlineStack>
-                                <Layout.Section secondary>
-                                  <div style={{ width: "120px" }}>
-                                    <Text variant="bodyMd" tone="subdued">
-                                      {index + 1}st goal
-                                    </Text>
+                        {/* Render all goals (full original milestone editor UI) */}
+                        <BlockStack gap="400">
+                          {goals.map((goal, index) => (
+                            <Box
+                              paddingInlineStart="200"
+                              key={goal.id}
+                              ref={(el) => {
+                                if (el) goalRefs.current[goal.id] = el;
+                              }}
+                            >
+                              <InlineGrid
+                                columns="120px 1fr"
+                                gap="400"
+                                alignItems="start"
+                              >
+                                {/* Left column */}
+                                <Box>
+                                  <Text variant="bodyMd" tone="subdued">
+                                    {getOrdinal(index + 1)} goal
+                                  </Text>
 
-                                    <TextField
-                                      label=""
-                                      type="number"
-                                      value={goal.target || ""}
-                                      prefix={
-                                        selected === "cart"
-                                          ? defaultCurrency
-                                          : "Qty"
-                                      }
-                                      onChange={(val) =>
-                                        setGoals((prev) =>
-                                          prev.map((g) =>
-                                            g.id === goal.id
-                                              ? {
-                                                  ...g,
-                                                  target: Number(val),
-                                                }
-                                              : g,
-                                          ),
-                                        )
-                                      }
-                                      error={tieredErrors[goal.id]?.target}
-                                    />
-                                  </div>
-                                </Layout.Section>
+                                  <TextField
+                                    label=""
+                                    type="number"
+                                    value={goal.target || ""}
+                                    prefix={
+                                      selected === "cart"
+                                        ? defaultCurrency
+                                        : "Qty"
+                                    }
+                                    onChange={(val) =>
+                                      setGoals((prev) =>
+                                        prev.map((g) =>
+                                          g.id === goal.id
+                                            ? { ...g, target: Number(val) }
+                                            : g,
+                                        ),
+                                      )
+                                    }
+                                    error={tieredErrors[goal.id]?.target}
+                                  />
+                                </Box>
 
-                                {/* 🔹 Right Side: Goal Card */}
-                                <Layout.Section>
-                                  <Card sectioned>
-                                    {/* Header Row */}
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        borderBottom: "1px solid #eee",
-                                        padding: "0.75rem 1rem",
-                                      }}
-                                    >
-                                      <BlockStack gap="100">
-                                        <Text
-                                          variant="headingSm"
-                                          as="h3"
-                                          fontWeight="bold"
-                                        >
-                                          {goal.type === "free_product" &&
-                                            "Free product"}
-                                          {goal.type === "order_discount" &&
-                                            "Order discount"}
-                                          {goal.type === "free_shipping" &&
-                                            "Free shipping"}
-                                        </Text>
+                                {/* Right column */}
+                                <Box paddingInlineStart="200">
+                                  <TieredGoalCard
+                                    goal={goal}
+                                    setGoals={setGoals}
+                                    tieredErrors={tieredErrors}
+                                    setCurrentGoal={setCurrentGoal}
+                                    setPickerType={setPickerType}
+                                    setPickerOpen={setPickerOpen}
+                                    defaultCurrency={defaultCurrency}
+                                  />
+                                </Box>
+                              </InlineGrid>
+                            </Box>
+                          ))}
+                        </BlockStack>
+                      </BlockStack>
 
-                                        <Text tone="subdued">
-                                          ID: {goal.id}
-                                        </Text>
-                                      </BlockStack>
-
-                                      <ButtonGroup>
-                                        {/* <Button plain>Done</Button> */}
-                                        <Tooltip content="Delete">
-                                          <Button
-                                            tone="critical"
-                                            onClick={() =>
-                                              setGoals((prev) =>
-                                                prev.filter(
-                                                  (g) => g.id !== goal.id,
-                                                ),
-                                              )
-                                            }
-                                            icon={
-                                              <Icon
-                                                source={DeleteIcon}
-                                                tone="base"
-                                              />
-                                            }
-                                          />
-                                        </Tooltip>
-                                      </ButtonGroup>
-                                    </div>
-
-                                    {/* Content Section */}
-                                    <div
-                                      style={{
-                                        padding: "1rem",
-                                      }}
-                                    >
-                                      {/* FREE PRODUCT */}
-                                      {goal.type === "free_product" && (
-                                        <>
-                                          <Text fontWeight="bold">
-                                            Select products to give as free
-                                            gifts
-                                          </Text>
-
-                                          <div
-                                            style={{
-                                              marginTop: "0.5rem",
-                                            }}
-                                          >
-                                            <Button
-                                              primary
-                                              onClick={() => {
-                                                setCurrentGoal(goal.id);
-                                                setPickerType("get"); // free gift selection is "get"
-                                                setPickerOpen(true);
-                                              }}
-                                            >
-                                              Add a product
-                                            </Button>
-
-                                            {tieredErrors[goal.id]
-                                              ?.products && (
-                                              <Text
-                                                tone="critical"
-                                                variant="bodySm"
-                                              >
-                                                {tieredErrors[goal.id].products}
-                                              </Text>
-                                            )}
-                                          </div>
-
-                                          <div
-                                            style={{
-                                              marginTop: "1.5rem",
-                                            }}
-                                          >
-                                            <InlineStack
-                                              gap="200"
-                                              align="center"
-                                            >
-                                              <Text>
-                                                How many gifts can they choose?
-                                              </Text>
-                                              <Tooltip content="Number of gifts a customer can pick">
-                                                <Text tone="subdued">?</Text>
-                                              </Tooltip>
-                                            </InlineStack>
-
-                                            <div
-                                              style={{
-                                                marginTop: "0.75rem",
-                                              }}
-                                            >
-                                              <ButtonGroup>
-                                                <Button
-                                                  onClick={() =>
-                                                    setGoals((prev) =>
-                                                      prev.map((g) =>
-                                                        g.id === goal.id
-                                                          ? {
-                                                              ...g,
-                                                              giftQty: Math.max(
-                                                                1,
-                                                                g.giftQty - 1,
-                                                              ),
-                                                            }
-                                                          : g,
-                                                      ),
-                                                    )
-                                                  }
-                                                >
-                                                  −
-                                                </Button>
-
-                                                <Button>{goal.giftQty}</Button>
-
-                                                <Button
-                                                  onClick={() =>
-                                                    setGoals((prev) =>
-                                                      prev.map((g) =>
-                                                        g.id === goal.id
-                                                          ? {
-                                                              ...g,
-                                                              giftQty:
-                                                                g.giftQty + 1,
-                                                            }
-                                                          : g,
-                                                      ),
-                                                    )
-                                                  }
-                                                >
-                                                  +
-                                                </Button>
-                                              </ButtonGroup>
-                                              {tieredErrors[goal.id]
-                                                ?.giftQty && (
-                                                <Box paddingBlockStart="200">
-                                                  <Text
-                                                    tone="critical"
-                                                    variant="bodySm"
-                                                  >
-                                                    {
-                                                      tieredErrors[goal.id]
-                                                        .giftQty
-                                                    }
-                                                  </Text>
-                                                </Box>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </>
-                                      )}
-
-                                      {/* Render product rows */}
-                                      {goal.products &&
-                                        goal.products.length > 0 && (
-                                          <div
-                                            style={{
-                                              marginTop: "1rem",
-                                            }}
-                                          >
-                                            {goal.products.map((v) => (
-                                              <div
-                                                key={v.id}
-                                                style={{
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  justifyContent:
-                                                    "space-between",
-                                                  border: "1px solid #eee",
-                                                  borderRadius: "6px",
-                                                  padding: "8px 12px",
-                                                  marginBottom: "0.5rem",
-                                                  background: "#fff",
-                                                }}
-                                              >
-                                                {/* Thumbnail + Title */}
-                                                <div
-                                                  style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: "8px",
-                                                  }}
-                                                >
-                                                  <img
-                                                    src={
-                                                      v.image?.url ||
-                                                      v.productImage?.url ||
-                                                      ""
-                                                    }
-                                                    alt={
-                                                      v.image?.altText ||
-                                                      v.productImage?.altText ||
-                                                      v.title
-                                                    }
-                                                    style={{
-                                                      width: "32px",
-                                                      height: "32px",
-                                                      borderRadius: "4px",
-                                                      objectFit: "cover",
-                                                    }}
-                                                  />
-                                                  <Text>
-                                                    {v.productTitle
-                                                      ? `${v.productTitle} — ${v.title}`
-                                                      : v.title}
-                                                  </Text>
-                                                </div>
-
-                                                {/* Delete button */}
-                                                <Button
-                                                  plain
-                                                  destructive
-                                                  icon={
-                                                    <Icon source={DeleteIcon} />
-                                                  }
-                                                  onClick={() =>
-                                                    setGoals((prev) =>
-                                                      prev.map((g) =>
-                                                        g.id === goal.id
-                                                          ? {
-                                                              ...g,
-                                                              products:
-                                                                g.products.filter(
-                                                                  (prod) =>
-                                                                    prod.id !==
-                                                                    v.id,
-                                                                ),
-                                                            }
-                                                          : g,
-                                                      ),
-                                                    )
-                                                  }
-                                                />
-                                              </div>
-                                            ))}
-
-                                            {/* Add more button */}
-                                            <Button
-                                              plain
-                                              icon={<Icon source={PlusIcon} />}
-                                              onClick={() => {
-                                                setCurrentGoal(goal.id);
-                                                setPickerType("get");
-                                                setPickerOpen(true);
-                                              }}
-                                            >
-                                              Add more to the list
-                                            </Button>
-                                          </div>
-                                        )}
-
-                                      {/* ORDER DISCOUNT */}
-                                      {goal.type === "order_discount" && (
-                                        <div>
-                                          <Text fontWeight="bold">
-                                            Type of order discount
-                                          </Text>
-
-                                          <div
-                                            style={{
-                                              marginTop: "0.5rem",
-                                            }}
-                                          >
-                                            <ButtonGroup segmented>
-                                              <Button
-                                                pressed={
-                                                  goal.discountType ===
-                                                  "percentage"
-                                                }
-                                                onClick={() =>
-                                                  setGoals((prev) =>
-                                                    prev.map((g) =>
-                                                      g.id === goal.id
-                                                        ? {
-                                                            ...g,
-                                                            discountType:
-                                                              "percentage",
-                                                          }
-                                                        : g,
-                                                    ),
-                                                  )
-                                                }
-                                              >
-                                                Percentage off
-                                              </Button>
-
-                                              <Button
-                                                pressed={
-                                                  goal.discountType === "amount"
-                                                }
-                                                onClick={() =>
-                                                  setGoals((prev) =>
-                                                    prev.map((g) =>
-                                                      g.id === goal.id
-                                                        ? {
-                                                            ...g,
-                                                            discountType:
-                                                              "amount",
-                                                          }
-                                                        : g,
-                                                    ),
-                                                  )
-                                                }
-                                              >
-                                                Amount off
-                                              </Button>
-                                            </ButtonGroup>
-                                          </div>
-
-                                          <div
-                                            style={{
-                                              marginTop: "1rem",
-                                            }}
-                                          >
-                                            <Text fontWeight="bold">
-                                              Enter the value
-                                            </Text>
-
-                                            <TextField
-                                              prefix={
-                                                goal.discountType === "amount"
-                                                  ? defaultCurrency
-                                                  : "%"
-                                              }
-                                              type="number"
-                                              value={goal.discountValue || ""}
-                                              onChange={(val) =>
-                                                setGoals((prev) =>
-                                                  prev.map((g) =>
-                                                    g.id === goal.id
-                                                      ? {
-                                                          ...g,
-                                                          discountValue: val,
-                                                        }
-                                                      : g,
-                                                  ),
-                                                )
-                                              }
-                                            />
-                                            {tieredErrors[goal.id]
-                                              ?.discountValue && (
-                                              <Box paddingBlockStart="200">
-                                                <Text
-                                                  tone="critical"
-                                                  variant="bodySm"
-                                                >
-                                                  {
-                                                    tieredErrors[goal.id]
-                                                      .discountValue
-                                                  }
-                                                </Text>
-                                              </Box>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {/* FREE SHIPPING */}
-                                      {goal.type === "free_shipping" && (
-                                        <Text>
-                                          🚚 Free shipping will be applied
-                                          automatically.
-                                        </Text>
-                                      )}
-                                    </div>
-                                  </Card>
-                                </Layout.Section>
-                              </InlineStack>
-                            </Layout.Section>
-                          </Layout>
-                        </div>
-                      ))}
+                      <Box padding="200">
+                        <Banner tone="info">
+                          <Text variant="bodySm">
+                            Set your existing Shopify discounts to combine with
+                            product and order discounts to ensure that these
+                            rewards work well together.
+                          </Text>
+                        </Banner>
+                      </Box>
                     </div>
 
                     {/* ⬇️ ProductPickerModal for tiered free gifts */}
@@ -1848,95 +1525,19 @@ export default function CampaignIndexTable() {
              RIGHT SIDE (Preview / Settings)
           ------------------------------------------------- */}
           <Layout.Section variant="oneThird">
-            <BlockStack gap="400">
-              {/* Status + Name card (always) */}
-              {status !== "active" ? (
-                <Banner title="This campaign is paused" tone="warning">
-                  <div style={{ padding: "1rem" }}>
-                    <Select
-                      label="Status"
-                      options={statusOptions}
-                      onChange={setStatus}
-                      value={status}
-                    />
-
-                    <div style={{ marginTop: "1rem" }}>
-                      <TextField
-                        label="Campaign name"
-                        value={name}
-                        onChange={setName}
-                        error={nameError}
-                      />
-                    </div>
-                  </div>
-                </Banner>
-              ) : (
-                <Card>
-                  <div style={{ padding: "1rem" }}>
-                    <Select
-                      label="Status"
-                      options={statusOptions}
-                      onChange={setStatus}
-                      value={status}
-                    />
-
-                    <div style={{ marginTop: "1rem" }}>
-                      <TextField
-                        label="Campaign name"
-                        value={name}
-                        onChange={setName}
-                        error={nameError}
-                      />
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* BXGY Summary card (only in bxgy mode) */}
-              {isBxgy && (
-                <Card>
-                  <Box
-                    padding="400"
-                    borderBottomWidth="1"
-                    borderColor="border-subdued"
-                  >
-                    <Text variant="headingSm" as="h3" fontWeight="bold">
-                      Buy X Get Y Summary
-                    </Text>
-                  </Box>
-
-                  <Box padding="400">
-                    {(() => {
-                      const g = goals[0] || {};
-                      return (
-                        <Text>
-                          Buy <strong>{g.buyQty || 1}</strong> item(s) → Get{" "}
-                          <strong>{g.getQty || 1}</strong> item(s)
-                          <br />
-                          Discount:{" "}
-                          <strong>
-                            {g.discountValue || 0}
-                            {g.discountType === "fixed"
-                              ? ` ${defaultCurrency} off`
-                              : "% off"}
-                          </strong>
-                        </Text>
-                      );
-                    })()}
-                  </Box>
-                </Card>
-              )}
-
-              {/* Original Preview card (only for non-bxgy) */}
-              {!isBxgy && (
-                <PreviewCard
-                  goals={goals}
-                  selected={selected}
-                  defaultCurrency={defaultCurrency}
-                  content={content}
-                />
-              )}
-            </BlockStack>
+            <CampaignGoal
+              status={status}
+              setStatus={setStatus}
+              statusOptions={statusOptions}
+              name={name}
+              setName={setName}
+              nameError={nameError}
+              isBxgy={isBxgy}
+              goals={goals}
+              defaultCurrency={defaultCurrency}
+              selected={selected}
+              content={content}
+            />
           </Layout.Section>
         </Layout>
 

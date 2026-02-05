@@ -40,6 +40,29 @@ export const loader = async ({ request }) => {
           messages: [],
           autoScroll: false,
         },
+
+        cartTexts: {
+          header: {
+            cartHeaderText: "My Cart",
+          },
+          footer: {
+            cartButtonText: "Cart",
+            offersButtonText: "Offers",
+          },
+          side: {
+            discountText: "Discount",
+            totalText: "Total",
+            addNoteButtonText: "Add note",
+            discountCodeButtonText: "Discount",
+            checkoutButtonText: "Proceed to Checkout",
+          },
+          offers: {
+            badgeLockedText: "Locked",
+            badgeUnlockedText: "Unlocked",
+            offerHeaderText: "Exclusive Offers",
+          },
+        },
+
         bannerStyle: {},
         colors: {},
         customCSS: "",
@@ -51,7 +74,16 @@ export const loader = async ({ request }) => {
 
       if (rawValue) {
         try {
-          settings = JSON.parse(rawValue);
+          const parsed = JSON.parse(rawValue);
+
+          settings = {
+            ...settings, // defaults
+            ...parsed,
+            cartTexts: {
+              ...settings.cartTexts,
+              ...(parsed.cartTexts || {}),
+            },
+          };
         } catch (err) {
           log.warn("Failed to parse cart settings metafield JSON", {
             event: "cart.settings.parse_failed",

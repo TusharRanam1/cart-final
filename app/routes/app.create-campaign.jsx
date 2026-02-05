@@ -16,12 +16,12 @@ import { ArrowLeftIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { useState, useCallback } from "react";
 import { useNavigate } from "@remix-run/react";
-
+import { requireBilling } from "./utils/requireBilling.server";
 
 // Loader: makes sure the request is authenticated
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-
+  const { admin, session } = await authenticate.admin(request);
+  await requireBilling({ admin, session });
   return null;
 };
 
@@ -198,11 +198,11 @@ export default function AppIndexPage() {
             <Box paddingBlockEnd="600">
               <Card title={currentCampaign.title} sectioned>
                 <div style={{ textAlign: "center" }}>
-                  <img
+                  {/* <img
                     src={currentCampaign.image}
                     alt={currentCampaign.title}
                     style={{ width: "400px", height: "200px" }}
-                  />
+                  /> */}
 
                   <Box padding="400">
                     <BlockStack gap="400" align="center">
@@ -236,8 +236,10 @@ export default function AppIndexPage() {
 
                               // ⏳ Wait shortly so user can see toast (optional)
                               setTimeout(() => {
-                                navigate("/app/my-campaigns");
-                              }, 800);
+                                navigate(
+                                  `/app/my-campaigns?edit=${data.campaign.id}`,
+                                );
+                              }, 300);
 
                               return;
                             } else {

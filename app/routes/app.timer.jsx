@@ -100,17 +100,21 @@ export default function ResourceDetailsLayout() {
           setStatus(snapshot.status);
           setActiveDates(snapshot.activeDates);
 
-          setInitialSnapshot(snapshot);
+          setInitialSnapshot(JSON.parse(JSON.stringify(snapshot)));
         } else {
           // 🔑 IMPORTANT: baseline = defaults
-          setInitialSnapshot({
-            timerConfig,
-            timerText,
-            expiredMessage,
-            afterAction,
-            status,
-            activeDates,
-          });
+          setInitialSnapshot(
+            JSON.parse(
+              JSON.stringify({
+                timerConfig,
+                timerText,
+                expiredMessage,
+                afterAction,
+                status,
+                activeDates,
+              }),
+            ),
+          );
         }
       } catch (err) {
         console.error("🔥 LOAD ERROR:", err);
@@ -125,15 +129,30 @@ export default function ResourceDetailsLayout() {
   -------------------------------------------------- */
   const normalizeDates = (dates) => ({
     start: {
-      date: dates.start.date ? dates.start.date.toString().split("T")[0] : null,
-      time: dates.start.time,
+      date: dates.start?.date ?? null,
+      time: dates.start?.time ?? null,
     },
-    end: {
-      date: dates.end.date ? dates.end.date.toString().split("T")[0] : null,
-      time: dates.end.time,
-    },
+    end:
+      dates.hasEndDate && dates.end
+        ? {
+            date: dates.end.date ?? null,
+            time: dates.end.time ?? null,
+          }
+        : null,
     hasEndDate: dates.hasEndDate,
   });
+
+  // const normalizeDates = (dates) => ({
+  //   start: {
+  //     date: dates.start.date ? dates.start.date.toString().split("T")[0] : null,
+  //     time: dates.start.time,
+  //   },
+  //   end: {
+  //     date: dates.end.date ? dates.end.date.toString().split("T")[0] : null,
+  //     time: dates.end.time,
+  //   },
+  //   hasEndDate: dates.hasEndDate,
+  // });
 
   /* --------------------------------------------------
      SAVE
@@ -155,7 +174,12 @@ export default function ResourceDetailsLayout() {
       const data = await res.json();
 
       if (data.ok) {
-        setInitialSnapshot(currentSnapshot);
+        const savedSnapshot = {
+          ...currentSnapshot,
+          activeDates: normalizeDates(activeDates),
+        };
+
+        setInitialSnapshot(JSON.parse(JSON.stringify(savedSnapshot)));
         shopify?.saveBar?.hide("timer-save-bar");
       } else {
         alert("❌ Failed to save");

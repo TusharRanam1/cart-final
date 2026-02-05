@@ -11,16 +11,24 @@ import {
 import { ClockIcon, CalendarIcon } from "@shopify/polaris-icons";
 
 /** Parse stored date (ISO or YYYY-MM-DD) */
+
 function parseStoredDate(input) {
   if (!input) return null;
-  const d = new Date(input);
-  return Number.isNaN(d.getTime()) ? null : d;
+
+  // Expect YYYY-MM-DD
+  const [y, m, d] = input.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 /** Format a JS Date to YYYY-MM-DD */
 function formatLocalYMD(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-  return date.toISOString().split("T")[0];
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
 }
 
 /** Convert time to minutes */
@@ -127,10 +135,14 @@ export default function EndDateAndTime({ value, onChange }) {
     year: today.getFullYear(),
   });
 
-  const [selectedEnd, setSelectedEnd] = useState({
-    start: today,
-    end: today,
-  });
+  // const [selectedEnd, setSelectedEnd] = useState({
+  //   start: today,
+  //   end: today,
+  // });
+
+  const todayYMD = formatLocalYMD(new Date());
+
+  const [selectedEnd, setSelectedEnd] = useState(todayYMD);
 
   const [endTime, setEndTime] = useState("11:00 AM");
   const [endPopoverActive, setEndPopoverActive] = useState(false);

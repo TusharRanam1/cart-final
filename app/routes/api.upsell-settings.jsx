@@ -41,6 +41,17 @@ export const action = async ({ request }) => {
         selectedVariants: Array.isArray(normalUpsell.selectedVariants)
           ? normalUpsell.selectedVariants
           : [],
+
+        // ✅ ADD THESE
+        upsellTitle:
+          typeof normalUpsell.upsellTitle === "string"
+            ? normalUpsell.upsellTitle
+            : "You might like also",
+
+        buttonText:
+          typeof normalUpsell.buttonText === "string"
+            ? normalUpsell.buttonText
+            : "Add",
       },
 
       oneClickUpsell: {
@@ -50,6 +61,17 @@ export const action = async ({ request }) => {
         upsellText: oneClickUpsell.upsellText ?? "",
         showProductImage: !!oneClickUpsell.showProductImage,
         showInCartList: !!oneClickUpsell.showInCartList,
+
+        // ✅ ADD
+        upsellTitle:
+          typeof oneClickUpsell.upsellTitle === "string"
+            ? oneClickUpsell.upsellTitle
+            : "Frequently bought together",
+
+        buttonText:
+          typeof oneClickUpsell.buttonText === "string"
+            ? oneClickUpsell.buttonText
+            : "Add to cart",
       },
     };
 

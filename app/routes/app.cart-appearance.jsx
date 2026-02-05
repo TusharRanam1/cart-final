@@ -19,6 +19,7 @@ import {
   EnvelopeSoftPackIcon,
   LayoutSectionIcon,
   AppsIcon,
+  PersonalizedTextIcon,
 } from "@shopify/polaris-icons";
 
 import { useLoaderData } from "@remix-run/react";
@@ -36,6 +37,53 @@ import CartFeaturesSettings from "./components/CartFeaturesSettings";
 import { useState, useEffect } from "react";
 import { SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import CartWidgetSettings from "./components/CartWidgetSettings";
+import CartTextSettings from "./components/CartContentEditor/CartTextSettings";
+
+const DEFAULT_SETTINGS = {
+  theme: "theme1",
+  announcementBar: { messages: [], autoScroll: false },
+
+  cartTexts: {
+    header: {
+      cartHeaderText: "My Cart",
+    },
+
+    footer: {
+      cartButtonText: "Cart",
+      offersButtonText: "Offers",
+    },
+
+    side: {
+      discountText: "Discount",
+      totalText: "Total",
+      addNoteButtonText: "Add note",
+      discountCodeButtonText: "Discount",
+      checkoutButtonText: "Proceed to Checkout",
+    },
+
+    offers: {
+      badgeLockedText: "Locked",
+      badgeUnlockedText: "Unlocked",
+      offerHeaderText: "Exclusive Offers",
+    },
+  },
+
+  cartFeatures: {
+    offerAnimation: "confetti",
+    discountCodeInput: true,
+    orderNotes: true,
+  },
+  cartWidget: {
+    position: "right",
+    widgetColor: "#000000",
+    showFloatingWidget: true,
+  },
+  bannerStyle: { bannerType: "solid" },
+  colors: {},
+  customCSS: "",
+  customJS: "",
+  zIndex: "auto",
+};
 
 // this is new code
 export const loader = async ({ request }) => {
@@ -53,25 +101,6 @@ export const loader = async ({ request }) => {
 
   const res = await admin.graphql(query);
   const data = await res.json();
-  const DEFAULT_SETTINGS = {
-    theme: "theme1",
-    announcementBar: { messages: [], autoScroll: false },
-    cartFeatures: {
-      offerAnimation: "confetti",
-      discountCodeInput: true,
-      orderNotes: true,
-    },
-    cartWidget: {
-      position: "right",
-      widgetColor: "#000000",
-      showFloatingWidget: true,
-    },
-    bannerStyle: { bannerType: "solid" },
-    colors: {},
-    customCSS: "",
-    customJS: "",
-    zIndex: "auto",
-  };
 
   let settings;
 
@@ -80,6 +109,10 @@ export const loader = async ({ request }) => {
       settings = {
         ...DEFAULT_SETTINGS,
         ...JSON.parse(data.data.shop.metafield.value),
+        cartTexts: {
+          ...DEFAULT_SETTINGS.cartTexts,
+          ...(JSON.parse(data.data.shop.metafield.value)?.cartTexts || {}),
+        },
       };
     } catch {
       settings = DEFAULT_SETTINGS;
@@ -127,6 +160,9 @@ export default function ResourceDetailsLayout() {
   const [announcementBar, setAnnouncementBar] = useState(
     () => settings.announcementBar || { messages: [""], autoScroll: false },
   );
+  const [cartTexts, setCartTexts] = useState(
+    () => settings.cartTexts || DEFAULT_SETTINGS.cartTexts,
+  );
 
   // SaveBar state
   const [saveBarOpen, setSaveBarOpen] = useState(false);
@@ -159,6 +195,7 @@ export default function ResourceDetailsLayout() {
         announcementBar: settings.announcementBar,
         cartFeatures: settings.cartFeatures,
         cartWidget: settings.cartWidget,
+        cartTexts: settings.cartTexts,
       };
       setInitialSnapshot(snap);
       setIsInitialized(true);
@@ -206,6 +243,7 @@ export default function ResourceDetailsLayout() {
     announcementBar,
     cartFeatures,
     cartWidget,
+    cartTexts,
   };
 
   const changed =
@@ -230,6 +268,7 @@ export default function ResourceDetailsLayout() {
       announcementBar,
       cartFeatures,
       cartWidget,
+      cartTexts,
       themeChanged: selectedTheme !== initialSnapshot.theme, // 👈 IMPORTANT
     };
 
@@ -278,6 +317,30 @@ export default function ResourceDetailsLayout() {
           <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="400">
             {/* LEFT SECTION */}
             <BlockStack gap="400">
+              {/* Select Theme */}
+              <Colabssiblecom
+                title="Select theme"
+                description="Customize the cart widget appearance."
+                icon={ThemeEditIcon}
+              >
+                <BlockStack gap="300">
+                  <Box maxWidth="240px" width="100%">
+                    <Button
+                      variant="primary"
+                      icon={PaintBrushFlatIcon}
+                      onClick={() => setThemeModalOpen(true)}
+                    >
+                      Choose theme
+                    </Button>
+                  </Box>
+
+                  {/* Optional: show currently selected theme */}
+                  <Text tone="subdued">
+                    Selected theme: <strong>{selectedThemeName}</strong>
+                  </Text>
+                </BlockStack>
+              </Colabssiblecom>
+
               {/* Announcement Bar */}
               <Colabssiblecom
                 title="Announcement Bar"
@@ -313,30 +376,6 @@ export default function ResourceDetailsLayout() {
                   value={cartFeatures}
                   onChange={setCartFeatures}
                 />
-              </Colabssiblecom>
-
-              {/* Select Theme */}
-              <Colabssiblecom
-                title="Select theme"
-                description="Customize the cart widget appearance."
-                icon={ThemeEditIcon}
-              >
-                <BlockStack gap="300">
-                  <Box maxWidth="240px" width="100%">
-                    <Button
-                      variant="primary"
-                      icon={PaintBrushFlatIcon}
-                      onClick={() => setThemeModalOpen(true)}
-                    >
-                      Choose theme
-                    </Button>
-                  </Box>
-
-                  {/* Optional: show currently selected theme */}
-                  <Text tone="subdued">
-                    Selected theme: <strong>{selectedThemeName}</strong>
-                  </Text>
-                </BlockStack>
               </Colabssiblecom>
 
               {/* Banner + Colors */}
@@ -392,6 +431,15 @@ export default function ResourceDetailsLayout() {
                   value={customJS}
                   onChange={setCustomJS}
                 />
+              </Colabssiblecom>
+
+              {/* Content editor */}
+              <Colabssiblecom
+                title="Cart text"
+                description="Customize all text inside the cart drawer"
+                icon={PersonalizedTextIcon}
+              >
+                <CartTextSettings value={cartTexts} onChange={setCartTexts} />
               </Colabssiblecom>
             </BlockStack>
 

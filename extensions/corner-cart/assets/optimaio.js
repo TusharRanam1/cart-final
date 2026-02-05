@@ -773,6 +773,8 @@ if (overridden) return;
   async function render() {
     const upsell = window.__OPTIMAIO_CART__?.upsell?.oneClickUpsell;
     if (!upsell?.enabled) return;
+    const upsellTitle = upsell.upsellTitle || "";
+    const buttonText = upsell.buttonText || "Add";
 
     const container = document.getElementById("optimaio-oneclick-upsell");
     if (!container) return;
@@ -795,6 +797,27 @@ if (overridden) return;
 
     const isCheckbox = upsell.ctaType === "checkbox";
     const isHidden = upsell.showInCartList === false;
+
+    const wrapper = document.querySelector(".optimaio-cart-drawer-oneclick-upsell");
+
+
+if (wrapper) {
+  const existingTitle = wrapper.querySelector(".optimaio-oneclick-upsell-title");
+
+  if (upsellTitle) {
+    if (!existingTitle) {
+      wrapper.insertAdjacentHTML(
+        "afterbegin",
+        `<p class="optimaio-oneclick-upsell-title">${upsellTitle}</p>`
+      );
+    } else {
+      existingTitle.textContent = upsellTitle;
+    }
+  } else if (existingTitle) {
+    existingTitle.remove();
+  }
+}
+
 
     container.innerHTML = `
       <div class="optimaio-mini-upsell">
@@ -830,7 +853,7 @@ if (overridden) return;
                 <input type="checkbox" ${inUpsellCart ? "checked" : ""}>
               </label>`
             : `<button class="optimaio-mini-upsell__btn">
-                ${inUpsellCart ? "Remove" : "Add"}
+                ${inUpsellCart ? "Remove" : buttonText} 
               </button>`
         }
       </div>
@@ -1014,6 +1037,8 @@ async function loadRecsForCart(cartItems) {
   const mode = normalUpsell.upsellType || "complementary";
   const limit = normalUpsell.relatedProductCount || 4;
   const layout = normalUpsell?.displayLayout || "carousel";
+  const recoTitle = normalUpsell.upsellTitle || "You might also like";
+  const buttonText = normalUpsell.buttonText || "Add";
 
   const container = document.querySelector(".optimaio-recommendations-list");
   if (!container) return;
@@ -1022,7 +1047,7 @@ async function loadRecsForCart(cartItems) {
   if (section && !section.querySelector("p")) {
     section.insertAdjacentHTML(
       "afterbegin",
-      '<p class="optimaio-reco-title">You might also like</p>'
+      `<p class="optimaio-reco-title">${recoTitle}</p>`
     );
   }
 
@@ -1119,8 +1144,8 @@ async function loadRecsForCart(cartItems) {
       </div>
 
       <button class="optimaio-rec-add" data-id="${p.variants[0].id}">
-        Add
-      </button>
+  ${buttonText}
+</button>
     </div>
   `).join("");
   container.className = `optimaio-recommendations-list layout-${layout}`;

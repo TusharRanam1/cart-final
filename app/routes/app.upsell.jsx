@@ -20,17 +20,20 @@ import { SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import UpsellProductSettings from "./components/UpsellProductSettings.jsx";
 import OneClickUpsellSettings from "./components/OneClickUpsellSettings.jsx";
 import Colabssiblecom from "./components/Colabssiblecom";
-import ProductPickerModal from "./components/ProductPickerModal";
 
 /* ================= DEFAULT SETTINGS ================= */
 const DEFAULT_SETTINGS = {
   normalUpsell: {
     enabled: false,
-    upsellType: "recommended",
+    upsellType: "related",
     displayLayout: "carousel",
     ctaAction: "add_to_cart",
     relatedProductCount: 4,
     selectedVariants: [],
+
+    // ✅ ADD THESE
+    upsellTitle: "You might like also",
+    buttonText: "Add",
   },
   oneClickUpsell: {
     enabled: false,
@@ -39,6 +42,10 @@ const DEFAULT_SETTINGS = {
     upsellText: "",
     showProductImage: false,
     showInCartList: false,
+
+    // ✅ NEW
+    upsellTitle: "Frequently bought together",
+    buttonText: "Add to cart",
   },
 };
 
@@ -59,6 +66,28 @@ export const loader = async ({ request }) => {
   const data = await res.json();
   let settings = DEFAULT_SETTINGS;
 
+  // 👇 ADD THIS BLOCK
+  const raw = data?.data?.shop?.metafield?.value;
+
+  // 👇 THEN PARSE
+  try {
+    const saved = JSON.parse(raw);
+
+    settings = {
+      normalUpsell: {
+        ...DEFAULT_SETTINGS.normalUpsell,
+        ...(saved.normalUpsell || {}),
+      },
+      oneClickUpsell: {
+        ...DEFAULT_SETTINGS.oneClickUpsell,
+        ...(saved.oneClickUpsell || {}),
+      },
+    };
+  } catch (err) {
+    console.error("Failed to parse upsell_settings metafield", err);
+    console.warn("Raw metafield value:", raw);
+  }
+
   if (data?.data?.shop?.metafield?.value) {
     try {
       const saved = JSON.parse(data.data.shop.metafield.value);
@@ -72,7 +101,10 @@ export const loader = async ({ request }) => {
           ...(saved.oneClickUpsell || {}),
         },
       };
-    } catch {}
+    } catch (err) {
+      console.error("Failed to parse upsell_settings metafield", err);
+      console.warn("Metafield value:", data.data.shop.metafield.value);
+    }
   }
 
   return json({ settings });
@@ -82,6 +114,15 @@ export const loader = async ({ request }) => {
 export default function Upsell() {
   const { settings } = useLoaderData();
   const shopify = useAppBridge();
+
+  // 🔒 Dev-only guard for embedded context
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.top === window.self) {
+      console.warn(
+        "Upsell page opened outside Shopify Admin iframe. OAuth loop will occur.",
+      );
+    }
+  }, []);
 
   const ITEMS_PER_PAGE = 5;
 
@@ -101,7 +142,23 @@ export default function Upsell() {
     settings.normalUpsell.selectedVariants ?? [],
   );
 
+  const [upsellTitle, setUpsellTitle] = useState(
+    settings.normalUpsell.upsellTitle ?? "You might like also",
+  );
+
+  const [buttonText, setButtonText] = useState(
+    settings.normalUpsell.buttonText ?? "Add",
+  );
+
   /* ---------- ONE CLICK UPSELL ---------- */
+  const [oneClickUpsellTitle, setOneClickUpsellTitle] = useState(
+    settings.oneClickUpsell.upsellTitle ?? "Frequently bought together",
+  );
+
+  const [oneClickButtonText, setOneClickButtonText] = useState(
+    settings.oneClickUpsell.buttonText ?? "Add to cart",
+  );
+
   const [oneClickEnabled, setOneClickEnabled] = useState(
     settings.oneClickUpsell.enabled,
   );
@@ -141,6 +198,8 @@ export default function Upsell() {
         ctaAction,
         relatedProductCount,
         selectedVariants: selectedProducts,
+        upsellTitle,
+        buttonText,
       },
       oneClickUpsell: {
         enabled: oneClickEnabled,
@@ -149,6 +208,8 @@ export default function Upsell() {
         upsellText,
         showProductImage,
         showInCartList,
+        upsellTitle: oneClickUpsellTitle,
+        buttonText: oneClickButtonText,
       },
     }),
     [
@@ -158,12 +219,16 @@ export default function Upsell() {
       ctaAction,
       relatedProductCount,
       selectedProducts,
+      upsellTitle, // ✅ REQUIRED
+      buttonText, // ✅ REQUIRED
       oneClickEnabled,
       ctaType,
       oneClickProducts,
       upsellText,
       showProductImage,
       showInCartList,
+      oneClickUpsellTitle, // ✅
+      oneClickButtonText, // ✅
     ],
   );
 
@@ -254,6 +319,11 @@ export default function Upsell() {
                   setShowProductImage={setShowProductImage}
                   showInCartList={showInCartList}
                   setShowInCartList={setShowInCartList}
+                  /* ✅ NEW */
+                  upsellTitle={oneClickUpsellTitle}
+                  setUpsellTitle={setOneClickUpsellTitle}
+                  buttonText={oneClickButtonText}
+                  setButtonText={setOneClickButtonText}
                   oneClickPickerOpen={oneClickPickerOpen} // ✅ FIX
                   setOneClickPickerOpen={setOneClickPickerOpen} // ✅ FIX
                   variablePopoverOpen={variablePopoverOpen} // ✅ FIX
@@ -281,15 +351,18 @@ export default function Upsell() {
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                   pickerOpen={normalPickerOpen}
                   setPickerOpen={setNormalPickerOpen}
+                  /* ✅ ADD THESE */
+                  upsellTitle={upsellTitle}
+                  setUpsellTitle={setUpsellTitle}
+                  buttonText={buttonText}
+                  setButtonText={setButtonText}
                 />
               </Colabssiblecom>
             </BlockStack>
 
             <BlockStack>
               <Card>
-                <Box padding="400">
-                  <Select label="Status" />
-                </Box>
+                <Box padding="400">Preview Card</Box>
               </Card>
             </BlockStack>
           </InlineGrid>

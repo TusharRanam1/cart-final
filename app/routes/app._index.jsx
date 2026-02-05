@@ -148,7 +148,7 @@ export default function AppIndexPage() {
 
                     <Text tone="subdued" alignment="center">
                       Learn best practices to boost your average order value
-                      using CornerCart.
+                      using Zupli.
                     </Text>
 
                     <Button
@@ -189,6 +189,48 @@ export default function AppIndexPage() {
                 </Card>
               </Box> */}
             </InlineStack>
+          </Layout.Section>
+
+          <Layout.Section>
+            <Card padding="600">
+              <Box
+                // background="bg-surface-secondary"
+                borderRadius="300"
+              >
+                <InlineStack align="space-between" gap="600" wrap={false}>
+                  {/* Left content */}
+                  <BlockStack gap="300" inlineAlign="start">
+                    <Text variant="headingMd" as="h2">
+                      How do you like the app so far?
+                    </Text>
+
+                    <Text tone="subdued">
+                      Did the app meet your expectations? Was it easy to setup?
+                      Was the support team helpful?
+                    </Text>
+
+                    <InlineStack gap="200">
+                      <Button variant="primary" size="slim">
+                        Yes, it’s great!
+                      </Button>
+
+                      <Button variant="tertiary" size="slim">
+                        No, I have suggestions
+                      </Button>
+                    </InlineStack>
+                  </BlockStack>
+
+                  {/* Right illustration */}
+                  <Box>
+                    <img
+                      src="/feedback-thumbs.svg"
+                      alt="Feedback illustration"
+                      style={{ height: 120 }}
+                    />
+                  </Box>
+                </InlineStack>
+              </Box>
+            </Card>
           </Layout.Section>
         </Layout>
       </Box>

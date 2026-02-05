@@ -3,9 +3,9 @@
 export const ColorThemes = [
   {
     id: "theme0",
-    name: "Sand Dunes Light green",
-    src: "/theme-icons/thumbnail/sand-dunes-light-green.svg",
-    previewSrc: "/theme-icons/preview/sand-dunes-light-green.png",
+    name: "Sage Linen",
+    src: "/theme-icons/thumbnail/sage-linen.svg",
+    previewSrc: "/theme-icons/preview/sage-linen.png",
   },
   {
     id: "theme1",
@@ -54,5 +54,11 @@ export const ColorThemes = [
     name: "Bubblegum Light",
     src: "/theme-icons/thumbnail/bubblegum-light.svg",
     previewSrc: "/theme-icons/preview/bubblegum-light.png",
+  },
+  {
+    id: "theme9",
+    name: "Rose Quartz",
+    src: "/theme-icons/thumbnail/rose-quartz.svg",
+    previewSrc: "/theme-icons/preview/rose-quartz.png",
   },
 ];

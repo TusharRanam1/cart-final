@@ -115,6 +115,7 @@ export const action = async ({ request }) => {
           body.announcementBar ?? existingSettings.announcementBar,
         cartFeatures: body.cartFeatures ?? existingSettings.cartFeatures,
         cartWidget: body.cartWidget ?? existingSettings.cartWidget,
+        cartTexts: body.cartTexts ?? existingSettings.cartTexts,
       };
 
       if (mergedSettings.announcementBar?.messages) {
